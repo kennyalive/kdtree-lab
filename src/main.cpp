@@ -24,6 +24,8 @@ int main(int argc, char* argv[])
   std::vector<std::unique_ptr<TriangleMesh>> meshes;
   std::vector<std::unique_ptr<KdTree>> kdTrees;
 
+  printf("loading data...\n");
+
   for (int i = 0; i < modelsCount; i++) {
     meshes.push_back(LoadTriangleMesh(modelFiles[i]));
     kdTrees.push_back(
@@ -31,6 +33,7 @@ int main(int argc, char* argv[])
   }
 
   // run benchmark
+  printf("shooting rays...\n");
   int elapsedTime = 0;
   for (int i = 0; i < modelsCount; i++) {
     int timeMsec = BenchmarkKdTree(*kdTrees[i]);
