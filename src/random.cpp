@@ -41,7 +41,7 @@ static unsigned long mt[N]; /* the array for the state vector  */
 static int mti = N + 1;     /* mti==N+1 means mt[N] is not initialized */
 
 // Random Number Functions
-static void init_genrand(unsigned long seed)
+void InitRNG(unsigned long seed)
 {
   mt[0] = seed & 0xffffffffUL;
   for (mti = 1; mti < N; mti++) {
@@ -65,7 +65,7 @@ uint32_t RandUint32()
     int kk;
 
     if (mti == N + 1)       /* if init_genrand() has not been called, */
-      init_genrand(5489UL); /* default initial seed */
+        InitRNG(5489UL); /* default initial seed */
 
     for (kk = 0; kk < N - M; kk++) {
       y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);

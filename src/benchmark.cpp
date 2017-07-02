@@ -4,7 +4,8 @@
 #include "random.h"
 #include "triangle.h"
 #include "vector.h"
-#include <cassert>
+
+#include <embree2/rtcore_ray.h>
 
 namespace {
 const double PI = 3.14159265358979323846;
@@ -95,16 +96,64 @@ int BenchmarkKdTree(const KdTree& kdTree)
       lastHitEpsilon = intersection.epsilon;
     }
 
-    //// debug output
-    // if (raysTested < 1024) {
-    //  if (hitFound)
-    //    printf("%d: found: %s, lastHit: %.14f %.14f %.14f\n", raysTested,
-    //           hitFound ? "true" : "false", lastHit.x, lastHit.y, lastHit.z);
-    //  else
-    //    printf("%d: found: %s\n", raysTested, hitFound ? "true" : "false");
-    //}
+    if (debug_rays && raysTested < debug_ray_count) {
+      if (hitFound)
+        printf("%d: found: %s, lastHit: %.14f %.14f %.14f\n", raysTested,
+               hitFound ? "true" : "false", lastHit.x, lastHit.y, lastHit.z);
+      else
+        printf("%d: found: %s\n", raysTested, hitFound ? "true" : "false");
+    }
   }
   return timer.ElapsedMilliseconds();
+}
+
+int BenchmarkEmbree(RTCScene scene, const BoundingBox_f& bounds)
+{
+    Timer timer;
+
+    Vector lastHit = (bounds.minPoint + bounds.maxPoint) * 0.5;
+        
+    double lastHitEpsilon = 0.0;
+    auto rayGenerator = RayGenerator(BoundingBox(bounds));
+
+    RTCRay rtc_init_ray;
+    rtc_init_ray.tnear = 0.0f;
+    rtc_init_ray.tfar = std::numeric_limits<float>::infinity();
+    rtc_init_ray.geomID = RTC_INVALID_GEOMETRY_ID ;
+    rtc_init_ray.primID = RTC_INVALID_GEOMETRY_ID;
+    rtc_init_ray.instID = RTC_INVALID_GEOMETRY_ID;
+    rtc_init_ray.time = 0.0f;
+    rtc_init_ray.mask = -1;
+
+    for (int raysTested = 0; raysTested < benchmarkRaysCount; raysTested++) {
+        const Ray ray = rayGenerator.GenerateRay(lastHit, lastHitEpsilon);
+
+        RTCRay rtc_ray;
+        memcpy(&rtc_ray, &rtc_init_ray, sizeof(RTCRay));
+
+        rtc_ray.org[0] = static_cast<float>(ray.GetOrigin().x);
+        rtc_ray.org[1] = static_cast<float>(ray.GetOrigin().y);
+        rtc_ray.org[2] = static_cast<float>(ray.GetOrigin().z);
+        rtc_ray.dir[0] = static_cast<float>(ray.GetDirection().x);
+        rtc_ray.dir[1] = static_cast<float>(ray.GetDirection().y);
+        rtc_ray.dir[2] = static_cast<float>(ray.GetDirection().z);
+
+        rtcIntersect(scene, rtc_ray);
+
+        if (rtc_ray.geomID != RTC_INVALID_GEOMETRY_ID) {
+            lastHit = ray.GetPoint(rtc_ray.tfar);
+            lastHitEpsilon = 1e-3 * rtc_ray.tfar;
+        }
+
+        if (debug_rays && raysTested < debug_ray_count) {
+          if (rtc_ray.geomID != RTC_INVALID_GEOMETRY_ID)
+            printf("%d: found: %s, lastHit: %.14f %.14f %.14f\n", raysTested,
+                rtc_ray.geomID != RTC_INVALID_GEOMETRY_ID ? "true" : "false", lastHit.x, lastHit.y, lastHit.z);
+          else
+            printf("%d: found: %s\n", raysTested, rtc_ray.geomID != RTC_INVALID_GEOMETRY_ID ? "true" : "false");
+        }
+    }
+    return timer.ElapsedMilliseconds();
 }
 
 void ValidateKdTree(const KdTree& kdTree, int raysCount)
@@ -123,7 +172,7 @@ void ValidateKdTree(const KdTree& kdTree, int raysCount)
     KdTree::Intersection bruteForceIntersection;
     bool bruteForceHitFound = false;
 
-    for (int32_t i = 0; i < kdTree.GetMesh().GetTrianglesCount(); i++) {
+    for (int32_t i = 0; i < kdTree.GetMesh().GetTriangleCount(); i++) {
       const auto& p = kdTree.GetMesh().triangles[i].points;
 
       Triangle triangle = {

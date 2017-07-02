@@ -41,15 +41,6 @@ inline void ValidationError(const std::string& message)
   exit(2);
 }
 
-inline void StoreBenchmarkTiming(const std::string& path, int time)
-{
-  std::ofstream stream(path);
-  if (!stream) {
-    RuntimeError("failed to store benchmark timing");
-  }
-  stream << time;
-}
-
 template <typename T>
 void AssertEquals(T actual, T expected, const std::string& message)
 {
