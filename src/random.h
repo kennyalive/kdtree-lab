@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-void InitRNG(unsigned long seed);
-uint32_t RandUint32();
-double RandDouble();
-double RandFromRange(double a, double b);
+void random_init();
+uint32_t random_uint32();
+float random_float();
+float random_from_range(float a, float b);

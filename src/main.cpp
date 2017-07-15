@@ -15,6 +15,7 @@ const std::string all_kd_trees[] = { "data/teapot.kdtree", "data/bunny.kdtree", 
 
 // Selects subset from all_models array to work with.
 const std::array<int, 3> model_indices { 0, 1, 2 };
+//const std::array<int, 1> model_indices { 0};
 
 const std::vector<std::string> models = []()
 {
@@ -39,18 +40,18 @@ void main_kdtree() {
     }
 
     printf("shooting rays (kdtree)...\n");
-    InitRNG(5489UL);
+    random_init();
     for (size_t i = 0; i < models.size(); i++) {
         int timeMsec = BenchmarkKdTree(*kdTrees[i]);
         double speed = (benchmarkRaysCount / 1000000.0) / (timeMsec / 1000.0);
-        printf("raycast performance [%-6s]: %.2f MRays/sec, (rnd = %d)\n", StripExtension(GetFileName(models[i])).c_str(), speed, RandUint32());
+        printf("raycast performance [%-6s]: %.2f MRays/sec, (rnd = %d)\n", StripExtension(GetFileName(models[i])).c_str(), speed, random_uint32());
 
     }
 
-    const int raysCount[3] = {32768, 64, 32};
+  /*  const int raysCount[3] = {32768, 64, 32};
     for (int i = 0; i < models.size(); i++) {
       ValidateKdTree(*kdTrees[i], raysCount[model_indices[i]]);
-    }
+    }*/
 }
 
 void main_embree() {
@@ -83,11 +84,11 @@ void main_embree() {
     }
 
     printf("shooting rays (embree)...\n");
-    InitRNG(5489UL);
+    random_init();
     for (size_t i = 0; i < models.size(); i++) {
         int timeMsec = BenchmarkEmbree(scenes[i], meshes[i]->GetBounds());
         double speed = (benchmarkRaysCount / 1000000.0) / (timeMsec / 1000.0);
-        printf("raycast performance [%-6s]: %.2f MRays/sec, (rnd = %d)\n", StripExtension(GetFileName(models[i])).c_str(), speed, RandUint32());
+        printf("raycast performance [%-6s]: %.2f MRays/sec, (rnd = %d)\n", StripExtension(GetFileName(models[i])).c_str(), speed, random_uint32());
     }
 
     for (size_t i = 0; i < models.size(); i++) {

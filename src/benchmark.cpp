@@ -5,24 +5,54 @@
 #include "triangle.h"
 #include "vector.h"
 
+#include <xmmintrin.h> 
+
 #include <embree2/rtcore_ray.h>
 
 namespace {
-const double PI = 3.14159265358979323846;
+// x range: [-PI,PI]
+float fast_sine(float x) {
+    constexpr float PI = 3.14159265358f;
+    constexpr float B = 4.0f / PI;
+    constexpr float C = -4.0f / (PI * PI);
+    constexpr float P = 0.225f;
 
-Vector UniformSampleSphere()
-{
-  auto u1 = RandDouble();
-  auto u2 = RandDouble();
-  assert(u1 >= 0.0 && u1 < 1.0);
-  assert(u2 >= 0.0 && u2 < 1.0);
+    float y = B * x + C * x * (x < 0 ? -x : x);
+    return P * (y * (y < 0 ? -y : y) - y) + y;
+}
 
-  double z = 1.0 - 2.0 * u1;
-  double r = sqrt(1.0 - z * z);
-  double phi = 2.0 * PI * u2;
-  double x = r * cos(phi);
-  double y = r * sin(phi);
-  return Vector(x, y, z);
+// x range: [-PI, PI]
+float fast_cosine(float x) {
+    constexpr float PI = 3.14159265358f;
+    constexpr float B = 4.0f / PI;
+    constexpr float C = -4.0f / (PI * PI);
+    constexpr float P = 0.225f;
+
+    x = (x > 0) ? -x : x;
+    x += PI/2;
+
+    return fast_sine(x);
+}
+
+float fast_sqrt(float v) {
+    float out;
+    __m128 in = _mm_load_ss(&v);
+    _mm_store_ss(&out, _mm_mul_ss(in, _mm_rsqrt_ss(in)));
+    return out;
+}
+
+Vector UniformSampleSphere() {
+    constexpr float PI = 3.14159265358f;
+
+    auto u1 = random_float();
+    auto u2 = random_float();
+
+    float z = 1.0f - 2.0f * u1;
+    float r = fast_sqrt(1.0f - z*z);
+    float phi = PI * (-1.0f + 2.0f * u2);
+    float x = r * fast_cosine(phi);
+    float y = r * fast_sine(phi);
+    return Vector(x, y, z);
 }
 
 class RayGenerator {
@@ -40,22 +70,24 @@ public:
   {
     // generate ray origin
     Vector origin;
-    origin.x = RandFromRange(raysBounds.minPoint.x, raysBounds.maxPoint.x);
-    origin.y = RandFromRange(raysBounds.minPoint.y, raysBounds.maxPoint.y);
-    origin.z = RandFromRange(raysBounds.minPoint.z, raysBounds.maxPoint.z);
+    origin.x = random_from_range(raysBounds.minPoint.x, raysBounds.maxPoint.x);
+    origin.y = random_from_range(raysBounds.minPoint.y, raysBounds.maxPoint.y);
+    origin.z = random_from_range(raysBounds.minPoint.z, raysBounds.maxPoint.z);
 
-    const bool useLastHit = RandDouble() < 0.25;
+    const bool useLastHit = random_float() < 0.25f;
     if (useLastHit)
       origin = lastHit;
 
     // generate ray direction;
     auto direction = UniformSampleSphere();
 
-    if (RandDouble() < 1.0 / 32.0 && direction.z != 0.0)
+    auto len = direction.Length();
+
+    if (random_float() < 1.0f / 32.0f && direction.z != 0.0)
       direction.x = direction.y = 0.0;
-    else if (RandDouble() < 1.0 / 32.0 && direction.y != 0.0)
+    else if (random_float() < 1.0f / 32.0f && direction.y != 0.0)
       direction.x = direction.z = 0.0;
-    else if (RandDouble() < 1.0 / 32.0 && direction.x != 0.0)
+    else if (random_float() < 1.0f / 32.0f && direction.x != 0.0)
       direction.y = direction.z = 0.0;
     direction = direction.GetNormalized();
 

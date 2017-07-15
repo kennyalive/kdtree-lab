@@ -1,103 +1,35 @@
 #include "random.h"
+#include <algorithm>
 
-/*
-Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-All rights reserved.
+const float Float_One_Minus_Epsilon = 0.99999994f;
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
+struct pcg_state {
+    uint64_t state; // RNG state.  All values are possible.
+    uint64_t inc;   // Controls which RNG sequence (stream) is
+                    // selected. Must *always* be odd.
+};
 
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
+const pcg_state PCG_INIT_STATE = {0x853c49e6748fea9bULL, 0xda3e39cb94b95bdbULL};
 
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
+static pcg_state pcg_global = PCG_INIT_STATE;
 
-3. The names of its contributors may not be used to endorse or promote
-products derived from this software without specific prior written
-permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-#define N 624
-#define M 397
-#define MATRIX_A 0x9908b0dfUL   /* constant vector a */
-#define UPPER_MASK 0x80000000UL /* most significant w-r bits */
-#define LOWER_MASK 0x7fffffffUL /* least significant r bits */
-
-static unsigned long mt[N]; /* the array for the state vector  */
-static int mti = N + 1;     /* mti==N+1 means mt[N] is not initialized */
-
-// Random Number Functions
-void InitRNG(unsigned long seed)
-{
-  mt[0] = seed & 0xffffffffUL;
-  for (mti = 1; mti < N; mti++) {
-    mt[mti] = (1812433253UL * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti);
-    /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
-    /* In the previous versions, MSBs of the seed affect   */
-    /* only MSBs of the array mt[].                        */
-    /* 2002/01/09 modified by Makoto Matsumoto             */
-    mt[mti] &= 0xffffffffUL;
-    /* for >32 bit machines */
-  }
+void random_init() {
+    pcg_global = PCG_INIT_STATE;
 }
 
-uint32_t RandUint32()
-{
-  unsigned long y;
-  static unsigned long mag01[2] = {0x0UL, MATRIX_A};
-  /* mag01[x] = x * MATRIX_A  for x=0,1 */
-
-  if (mti >= N) { /* generate N words at one time */
-    int kk;
-
-    if (mti == N + 1)       /* if init_genrand() has not been called, */
-        InitRNG(5489UL); /* default initial seed */
-
-    for (kk = 0; kk < N - M; kk++) {
-      y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
-      mt[kk] = mt[kk + M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    }
-    for (; kk < N - 1; kk++) {
-      y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
-      mt[kk] = mt[kk + (M - N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    }
-    y = (mt[N - 1] & UPPER_MASK) | (mt[0] & LOWER_MASK);
-    mt[N - 1] = mt[M - 1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-
-    mti = 0;
-  }
-
-  y = mt[mti++];
-
-  /* Tempering */
-  y ^= (y >> 11);
-  y ^= (y << 7) & 0x9d2c5680UL;
-  y ^= (y << 15) & 0xefc60000UL;
-  y ^= (y >> 18);
-
-  return y;
+uint32_t random_uint32() {
+    uint64_t oldstate = pcg_global.state;
+    pcg_global.state = oldstate * 6364136223846793005ULL + pcg_global.inc;
+    uint32_t xorshifted = static_cast<uint32_t>(((oldstate >> 18u) ^ oldstate) >> 27u);
+    uint32_t rot = oldstate >> 59u;
+    return (xorshifted >> rot) | (xorshifted << ((~rot + 1) & 31));
 }
 
-double RandDouble()
-{
-  return RandUint32() * (1.0 / 4294967296.0);
+float random_float() {
+    float r = random_uint32() * 2.3283064365e-10f;
+    return std::min(r, Float_One_Minus_Epsilon);
 }
 
-double RandFromRange(double a, double b)
-{
-  return a + RandDouble() * (b - a);
+float random_from_range(float a, float b) {
+  return a + random_float() * (b - a);
 }
