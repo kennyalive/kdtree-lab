@@ -20,7 +20,7 @@ std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
   };
 
   struct VectorHash {
-    std::size_t operator()(const Vector_f& v) const
+    std::size_t operator()(const Vector& v) const
     {
       size_t h1 = std::hash<float>()(v.x);
       size_t h2 = std::hash<float>()(v.y);
@@ -72,15 +72,15 @@ std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
   mesh->normals.resize(numTriangles);
   mesh->triangles.resize(numTriangles);
 
-  std::unordered_map<Vector_f, int32_t, VectorHash> uniqueVertices;
+  std::unordered_map<Vector, int32_t, VectorHash> uniqueVertices;
   uint8_t* dataPtr = fileContent.data() + headerSize + 4;
   for (uint32_t i = 0; i < numTriangles; i++) {
     float* f = reinterpret_cast<float*>(dataPtr);
-    mesh->normals[i] = Vector_f(f[0], f[1], f[2]);
+    mesh->normals[i] = Vector(f[0], f[1], f[2]);
     f += 3;
 
     for (int k = 0; k < 3; ++k) {
-      Vector_f v(f[0], f[1], f[2]);
+      Vector v(f[0], f[1], f[2]);
       f += 3;
 
       int32_t vertexIndex;
@@ -101,6 +101,6 @@ std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
     }
     dataPtr += facetSize;
   }
-  std::vector<Vector_f>(mesh->vertices).swap(mesh->vertices);
+  std::vector<Vector>(mesh->vertices).swap(mesh->vertices);
   return mesh;
 }

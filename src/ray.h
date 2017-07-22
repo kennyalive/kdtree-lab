@@ -9,9 +9,9 @@ public:
   Ray(const Vector& origin, const Vector& direction)
   : origin(origin)
   , direction(direction)
-  , invDirection(1.0 / direction.x, 1.0 / direction.y, 1.0 / direction.z)
+  , invDirection(1.0f / direction.x, 1.0f / direction.y, 1.0f / direction.z)
   {
-    assert(std::abs(direction.Length() - 1.0) < 1e-6);
+    assert(std::abs(direction.Length() - 1.0f) < 1e-6f);
   }
 
   const Vector& GetOrigin() const
@@ -29,12 +29,12 @@ public:
     return invDirection;
   }
 
-  void Advance(double t)
+  void Advance(float t)
   {
     origin = GetPoint(t);
   }
 
-  Vector GetPoint(double t) const
+  Vector GetPoint(float t) const
   {
     return origin + direction * t;
   }

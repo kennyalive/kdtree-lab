@@ -48,19 +48,19 @@ struct TBoundingBox {
 
   struct Intersection {
     bool found;
-    double t0;
-    double t1;
+    float t0;
+    float t1;
   };
 
   Intersection Intersect(const Ray& ray) const
   {
-    double t0 = 0.0;
-    double t1 = std::numeric_limits<double>::infinity();
+    float t0 = 0.0f;
+    float t1 = std::numeric_limits<float>::infinity();
 
     for (int i = 0; i < 3; i++) {
-      double tNear =
+      float tNear =
           (minPoint[i] - ray.GetOrigin()[i]) * ray.GetInvDirection()[i];
-      double tFar =
+      float tFar =
           (maxPoint[i] - ray.GetOrigin()[i]) * ray.GetInvDirection()[i];
 
       if (tNear > tFar)
@@ -87,5 +87,4 @@ struct TBoundingBox {
   }
 };
 
-using BoundingBox = TBoundingBox<double>;
-using BoundingBox_f = TBoundingBox<float>;
+using BoundingBox = TBoundingBox<float>;

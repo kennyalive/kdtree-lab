@@ -60,13 +60,13 @@ public:
   RayGenerator(const BoundingBox& meshBounds)
   {
     auto diagonal = meshBounds.maxPoint - meshBounds.minPoint;
-    double delta = 2.0 * diagonal.Length();
+    float delta = 2.0f * diagonal.Length();
 
     raysBounds = BoundingBox(meshBounds.minPoint - Vector(delta),
                              meshBounds.maxPoint + Vector(delta));
   }
 
-  Ray GenerateRay(const Vector& lastHit, double lastHitEpsilon) const
+  Ray GenerateRay(const Vector& lastHit, float lastHitEpsilon) const
   {
     // generate ray origin
     Vector origin;
@@ -98,7 +98,7 @@ public:
       ray.Advance(lastHitEpsilon);
     }
     else {
-      ray.Advance(1e-3);
+      ray.Advance(1e-3f);
     }
     return ray;
   }
@@ -114,7 +114,7 @@ int BenchmarkKdTree(const KdTree& kdTree)
 
   Vector lastHit =
       (kdTree.GetMeshBounds().minPoint + kdTree.GetMeshBounds().maxPoint) * 0.5;
-  double lastHitEpsilon = 0.0;
+  float lastHitEpsilon = 0.0;
   auto rayGenerator = RayGenerator(kdTree.GetMeshBounds());
 
   for (int raysTested = 0; raysTested < benchmarkRaysCount; raysTested++) {
@@ -139,13 +139,13 @@ int BenchmarkKdTree(const KdTree& kdTree)
   return timer.ElapsedMilliseconds();
 }
 
-int BenchmarkEmbree(RTCScene scene, const BoundingBox_f& bounds)
+int BenchmarkEmbree(RTCScene scene, const BoundingBox& bounds)
 {
     Timer timer;
 
     Vector lastHit = (bounds.minPoint + bounds.maxPoint) * 0.5;
         
-    double lastHitEpsilon = 0.0;
+    float lastHitEpsilon = 0.0;
     auto rayGenerator = RayGenerator(BoundingBox(bounds));
 
     RTCRay rtc_init_ray;
@@ -174,7 +174,7 @@ int BenchmarkEmbree(RTCScene scene, const BoundingBox_f& bounds)
 
         if (rtc_ray.geomID != RTC_INVALID_GEOMETRY_ID) {
             lastHit = ray.GetPoint(rtc_ray.tfar);
-            lastHitEpsilon = 1e-3 * rtc_ray.tfar;
+            lastHitEpsilon = 1e-3f * rtc_ray.tfar;
         }
 
         if (debug_rays && raysTested < debug_ray_count) {
@@ -192,7 +192,7 @@ void ValidateKdTree(const KdTree& kdTree, int raysCount)
 {
   Vector lastHit =
       (kdTree.GetMeshBounds().minPoint + kdTree.GetMeshBounds().maxPoint) * 0.5;
-  double lastHitEpsilon = 0.0;
+  float lastHitEpsilon = 0.0;
   auto rayGenerator = RayGenerator(kdTree.GetMeshBounds());
 
   for (int raysTested = 0; raysTested < raysCount; raysTested++) {

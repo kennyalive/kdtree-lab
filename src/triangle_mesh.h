@@ -14,12 +14,12 @@ struct TriangleMesh {
     std::array<TrianglePoint, 3> points;
   };
 
-  std::vector<Vector_f> vertices;
-  std::vector<Vector_f> normals;
+  std::vector<Vector> vertices;
+  std::vector<Vector> normals;
   std::vector<Triangle> triangles;
 
   int32_t GetTriangleCount() const;
   int32_t GetVertexCount() const;
-  BoundingBox_f GetTriangleBounds(int32_t triangleIndex) const;
-  BoundingBox_f GetBounds() const;
+  BoundingBox GetTriangleBounds(int32_t triangleIndex) const;
+  BoundingBox GetBounds() const;
 };

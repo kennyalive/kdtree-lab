@@ -14,8 +14,8 @@ class KdTree {
 
 public:
   struct Intersection {
-    double t = std::numeric_limits<double>::infinity();
-    double epsilon = 0.0;
+    float t = std::numeric_limits<float>::infinity();
+    float epsilon = 0.0;
   };
 
 public:

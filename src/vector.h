@@ -61,7 +61,7 @@ struct TVector {
 
   TVector operator/(T value) const
   {
-    const T inv_value = 1.0 / value;
+    const T inv_value = 1.0f / value;
     return TVector(x * inv_value, y * inv_value, z * inv_value);
   }
 
@@ -103,8 +103,7 @@ struct TVector {
   }
 };
 
-using Vector = TVector<double>;
-using Vector_f = TVector<float>;
+using Vector = TVector<float>;
 
 template <typename T>
 inline TVector<T> operator*(T value, const TVector<T>& v)

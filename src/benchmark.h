@@ -11,5 +11,5 @@ enum { debug_rays = false };
 enum { debug_ray_count = 4 };
 
 int BenchmarkKdTree(const KdTree& kdTree);
-int BenchmarkEmbree(RTCScene scene, const BoundingBox_f& bounds);
+int BenchmarkEmbree(RTCScene scene, const BoundingBox& bounds);
 void ValidateKdTree(const KdTree& kdTree, int raysCount);
