@@ -1,6 +1,11 @@
 .vs/
-Debug/
-x64/
+build/Debug/intermediate/
+*.ilk
+*.pdb
+*.exe
+build/Release/intermediate/
+*.ipdb
+*.iobj
 *.psess
 *.vspx
 *.user
