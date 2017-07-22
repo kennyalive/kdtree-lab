@@ -15,6 +15,7 @@
     <ProjectGuid>{3A912EC5-505B-4237-A265-6BA5C3672647}</ProjectGuid>
     <RootNamespace>kdtree</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <ProjectName>kdtree-vs-embree</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
