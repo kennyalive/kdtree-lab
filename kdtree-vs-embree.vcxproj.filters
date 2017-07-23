@@ -8,6 +8,7 @@
     <ClCompile Include="src\triangle.cpp" />
     <ClCompile Include="src\triangle_mesh.cpp" />
     <ClCompile Include="src\triangle_mesh_loader.cpp" />
+    <ClCompile Include="src\kdtree_builder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\benchmark.h" />
@@ -20,5 +21,6 @@
     <ClInclude Include="src\triangle_mesh_loader.h" />
     <ClInclude Include="src\vector.h" />
     <ClInclude Include="src\common.h" />
+    <ClInclude Include="src\kdtree_builder.h" />
   </ItemGroup>
 </Project>
