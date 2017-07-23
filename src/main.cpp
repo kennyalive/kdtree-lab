@@ -12,12 +12,15 @@
 
 const std::string model_path = "data/teapot.stl";
 const std::string kdtree_path = "data/teapot.kdtree";
+const int validation_ray_count = 32768;
 
 //const std::string model_path = "data/bunny.stl";
 //const std::string kdtree_path = "data/bunny.kdtree";
+//const int validation_ray_count = 64;
 
 //const std::string model_path = "data/dragon.stl";
 //const std::string kdtree_path = "data/dragon.kdtree";
+//const int validation_ray_count = 32;
 
 std::unique_ptr<TriangleMesh> mesh = LoadTriangleMesh(model_path);
 
@@ -31,10 +34,7 @@ void main_kdtree() {
     double speed = (benchmarkRaysCount / 1000000.0) / (timeMsec / 1000.0);
     printf("raycast performance [%-6s]: %.2f MRays/sec, (rnd = %d)\n", StripExtension(GetFileName(model_path)).c_str(), speed, random_uint32());
 
-  /*  const int raysCount[3] = {32768, 64, 32};
-    for (int i = 0; i < models.size(); i++) {
-      ValidateKdTree(*kdTrees[i], raysCount[model_indices[i]]);
-    }*/
+    //ValidateKdTree(*kdtree, validation_ray_count);
 }
 
 void main_embree() {
