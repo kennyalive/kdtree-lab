@@ -84,14 +84,14 @@ bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
 
   struct TraversalInfo {
     const Node* node;
-    double tMin;
-    double tMax;
+    float tMin;
+    float tMax;
   };
   TraversalInfo traversalStack[maxTraversalDepth];
   int traversalStackSize = 0;
 
-  double tMin = boundsIntersection.t0;
-  double tMax = boundsIntersection.t1;
+  float tMin = boundsIntersection.t0;
+  float tMax = boundsIntersection.t1;
 
   Triangle::Intersection closestIntersection;
   auto node = &nodes[0];
@@ -100,7 +100,7 @@ bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
     if (node->IsInteriorNode()) {
       int axis = node->GetSplitAxis();
 
-      double distanceToSplitPlane =
+      float distanceToSplitPlane =
           node->GetSplitPosition() - ray.GetOrigin()[axis];
 
       auto belowChild = node + 1;
@@ -119,7 +119,7 @@ bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
         }
 
         // tSplit != 0 (since distanceToSplitPlane != 0)
-        double tSplit = distanceToSplitPlane * ray.GetInvDirection()[axis];
+        float tSplit = distanceToSplitPlane * ray.GetInvDirection()[axis];
         if (tSplit >= tMax || tSplit < 0.0)
           node = firstChild;
         else if (tSplit <= tMin)
@@ -175,7 +175,7 @@ bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
     }
   } // while (closestIntersection.t > tMin)
 
-  if (closestIntersection.t == std::numeric_limits<double>::infinity())
+  if (closestIntersection.t == std::numeric_limits<float>::infinity())
     return false;
 
   intersection.t = closestIntersection.t;
