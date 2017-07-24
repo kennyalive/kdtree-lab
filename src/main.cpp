@@ -1,6 +1,7 @@
 #include "benchmark.h"
 #include "common.h"
 #include "kdtree.h"
+#include "kdtree_builder.h"
 #include "random.h"
 #include "triangle_mesh.h"
 #include "triangle_mesh_loader.h"
@@ -77,6 +78,20 @@ void main_embree() {
 int main() {
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
+    //{
+    //    KdTreeBuilder::BuildParams params;
+    //    KdTreeBuilder builder(*mesh, params);
+
+    //    Timer timer;
+    //    KdTree kdtree = builder.BuildTree();
+    //    int time = timer.ElapsedMilliseconds();
+    //    printf("KdTree build time = %dms\n", time);
+
+    //    builder.GetBuildStats().Print();
+    //    kdtree.PrintInfo();
+    //    //kdtree.SaveToFile("test.kdtree");
+    //}
 
     main_kdtree();
     main_embree();

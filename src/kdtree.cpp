@@ -76,6 +76,16 @@ void KdTree::SaveToFile(const std::string& fileName) const
     RuntimeError("failed to write kdTree triangle indices: " + fileName);
 }
 
+void KdTree::PrintInfo() {
+    auto nodes_size = nodes.size() * sizeof(Node);
+    printf("Nodes size: %zdK\n", nodes_size / 1024);
+    auto indices_size = triangleIndices.size() * sizeof(triangleIndices[0]);
+    printf("Triangle indices size: %zdK\n", indices_size / 1024);
+
+    printf("Total size = %zdK\n", (nodes_size + indices_size) / 1024);
+
+}
+
 bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
 {
   auto boundsIntersection = meshBounds.Intersect(ray);

@@ -25,6 +25,7 @@ public:
   KdTree(const std::string& fileName, const TriangleMesh& mesh);
 
   void SaveToFile(const std::string& fileName) const;
+  void PrintInfo();
 
   bool Intersect(const Ray& ray, Intersection& intersection) const;
 

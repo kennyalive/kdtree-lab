@@ -301,6 +301,9 @@ void KdTreeBuilder::BuildStats::NewLeaf(int leafTriangles, int depth)
   else { // not empty leaf
     leafDepthValues.push_back(static_cast<uint8_t>(depth));
     trianglesPerLeafAccumulated += leafTriangles;
+
+    if (leafTriangles == 1)
+        single_triangle_leaf_count++;
   }
 }
 
@@ -327,4 +330,10 @@ void KdTreeBuilder::BuildStats::FinalizeStats()
     accum += diff * diff;
   }
   depthStandardDeviation = sqrt(accum / notEmptyLeafCount);
+}
+
+void KdTreeBuilder::BuildStats::Print() const {
+    printf("leafCount = %dK\n", leafCount / 1024);
+    printf("emptyLeafCount = %dK\n", emptyLeafCount / 1024);
+    printf("single_triangle_leaf_count = %dK\n", single_triangle_leaf_count / 1024);
 }

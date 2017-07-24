@@ -34,9 +34,11 @@ public:
 
     void NewLeaf(int leafTriangles, int depth);
     void FinalizeStats();
+    void Print() const;
 
     int32_t leafCount = 0;
     int32_t emptyLeafCount = 0;
+    int32_t single_triangle_leaf_count = 0;
     double trianglesPerLeaf = 0.0;
     int perfectDepth = 0;
     double averageDepth = 0.0;
