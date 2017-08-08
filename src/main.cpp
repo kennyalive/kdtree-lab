@@ -75,24 +75,27 @@ void main_embree() {
     rtcDeleteDevice(device);
 }
 
+const bool build_tree = false;
+
 int main() {
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
-    //{
-    //    KdTreeBuilder::BuildParams params;
-    //    KdTreeBuilder builder(*mesh, params);
+    if (build_tree) {
+        KdTreeBuilder::BuildParams params;
+        KdTreeBuilder builder(*mesh, params);
 
-    //    Timer timer;
-    //    KdTree kdtree = builder.BuildTree();
-    //    int time = timer.ElapsedMilliseconds();
-    //    printf("KdTree build time = %dms\n", time);
+        Timer timer;
+        KdTree kdtree = builder.BuildTree();
+        int time = timer.ElapsedMilliseconds();
+        printf("KdTree build time = %dms\n", time);
 
-    //    builder.GetBuildStats().Print();
-    //    kdtree.PrintInfo();
-    //    //kdtree.SaveToFile("test.kdtree");
-    //}
+        builder.GetBuildStats().Print();
+        kdtree.PrintInfo();
+        kdtree.SaveToFile("test.kdtree");
+        return 0;
+    }
 
     main_kdtree();
-    main_embree();
+//    main_embree();
 }
