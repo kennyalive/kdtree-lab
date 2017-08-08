@@ -89,16 +89,16 @@ private:
   };
 
 private:
-  void BuildNode(const BoundingBox& nodeBounds, const int32_t* nodeTriangles,
+  void BuildNode(const Bounding_Box& nodeBounds, const int32_t* nodeTriangles,
                  int32_t nodeTrianglesCount, int depth, int32_t* triangles0,
                  int32_t* triangles1);
 
   void CreateLeaf(const int32_t* nodeTriangles, int32_t nodeTrianglesCount);
 
-  Split SelectSplit(const BoundingBox& nodeBounds,
+  Split SelectSplit(const Bounding_Box& nodeBounds,
                     const int32_t* nodeTriangles, int32_t nodeTrianglesCount);
 
-  Split SelectSplitForAxis(const BoundingBox& nodeBounds,
+  Split SelectSplitForAxis(const Bounding_Box& nodeBounds,
                            int32_t nodeTrianglesCount, int axis) const;
 
 private:
@@ -106,7 +106,7 @@ private:
   BuildParams buildParams;
   BuildStats buildStats;
 
-  std::vector<BoundingBox> triangleBounds;
+  std::vector<Bounding_Box> triangleBounds;
   std::vector<BoundEdge> edgesBuffer;
   std::vector<int32_t> trianglesBuffer;
 

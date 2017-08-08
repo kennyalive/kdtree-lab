@@ -57,22 +57,22 @@ Vector UniformSampleSphere() {
 
 class RayGenerator {
 public:
-  RayGenerator(const BoundingBox& meshBounds)
+  RayGenerator(const Bounding_Box& meshBounds)
   {
-    auto diagonal = meshBounds.maxPoint - meshBounds.minPoint;
-    float delta = 2.0f * diagonal.Length();
+    auto diagonal = meshBounds.max_point - meshBounds.min_point;
+    float delta = 2.0f * diagonal.length();
 
-    raysBounds = BoundingBox(meshBounds.minPoint - Vector(delta),
-                             meshBounds.maxPoint + Vector(delta));
+    raysBounds = Bounding_Box(meshBounds.min_point - Vector(delta),
+                              meshBounds.max_point + Vector(delta));
   }
 
   Ray GenerateRay(const Vector& lastHit, float lastHitEpsilon) const
   {
     // generate ray origin
     Vector origin;
-    origin.x = random_from_range(raysBounds.minPoint.x, raysBounds.maxPoint.x);
-    origin.y = random_from_range(raysBounds.minPoint.y, raysBounds.maxPoint.y);
-    origin.z = random_from_range(raysBounds.minPoint.z, raysBounds.maxPoint.z);
+    origin.x = random_from_range(raysBounds.min_point.x, raysBounds.max_point.x);
+    origin.y = random_from_range(raysBounds.min_point.y, raysBounds.max_point.y);
+    origin.z = random_from_range(raysBounds.min_point.z, raysBounds.max_point.z);
 
     const bool useLastHit = random_float() < 0.25f;
     if (useLastHit)
@@ -81,7 +81,7 @@ public:
     // generate ray direction;
     auto direction = UniformSampleSphere();
 
-    auto len = direction.Length();
+    auto len = direction.length();
 
     if (random_float() < 1.0f / 32.0f && direction.z != 0.0)
       direction.x = direction.y = 0.0;
@@ -89,7 +89,7 @@ public:
       direction.x = direction.z = 0.0;
     else if (random_float() < 1.0f / 32.0f && direction.x != 0.0)
       direction.y = direction.z = 0.0;
-    direction = direction.GetNormalized();
+    direction = direction.normalized();
 
     // initialize ray
     auto ray = Ray(origin, direction);
@@ -104,7 +104,7 @@ public:
   }
 
 private:
-  BoundingBox raysBounds;
+  Bounding_Box raysBounds;
 };
 } // namespace
 
@@ -113,7 +113,7 @@ int BenchmarkKdTree(const KdTree& kdTree)
   Timer timer;
 
   Vector lastHit =
-      (kdTree.GetMeshBounds().minPoint + kdTree.GetMeshBounds().maxPoint) * 0.5;
+      (kdTree.GetMeshBounds().min_point + kdTree.GetMeshBounds().max_point) * 0.5;
   float lastHitEpsilon = 0.0;
   auto rayGenerator = RayGenerator(kdTree.GetMeshBounds());
 
@@ -139,14 +139,14 @@ int BenchmarkKdTree(const KdTree& kdTree)
   return timer.ElapsedMilliseconds();
 }
 
-int BenchmarkEmbree(RTCScene scene, const BoundingBox& bounds)
+int BenchmarkEmbree(RTCScene scene, const Bounding_Box& bounds)
 {
     Timer timer;
 
-    Vector lastHit = (bounds.minPoint + bounds.maxPoint) * 0.5;
+    Vector lastHit = (bounds.min_point + bounds.max_point) * 0.5;
         
     float lastHitEpsilon = 0.0;
-    auto rayGenerator = RayGenerator(BoundingBox(bounds));
+    auto rayGenerator = RayGenerator(Bounding_Box(bounds));
 
     RTCRay rtc_init_ray;
     rtc_init_ray.tnear = 0.0f;
@@ -191,7 +191,7 @@ int BenchmarkEmbree(RTCScene scene, const BoundingBox& bounds)
 void ValidateKdTree(const KdTree& kdTree, int raysCount)
 {
   Vector lastHit =
-      (kdTree.GetMeshBounds().minPoint + kdTree.GetMeshBounds().maxPoint) * 0.5;
+      (kdTree.GetMeshBounds().min_point + kdTree.GetMeshBounds().max_point) * 0.5;
   float lastHitEpsilon = 0.0;
   auto rayGenerator = RayGenerator(kdTree.GetMeshBounds());
 
@@ -207,13 +207,13 @@ void ValidateKdTree(const KdTree& kdTree, int raysCount)
     for (int32_t i = 0; i < kdTree.GetMesh().GetTriangleCount(); i++) {
       const auto& p = kdTree.GetMesh().triangles[i].points;
 
-      Triangle triangle = {
-          {Vector(kdTree.GetMesh().vertices[p[0].vertexIndex]),
-           Vector(kdTree.GetMesh().vertices[p[1].vertexIndex]),
-           Vector(kdTree.GetMesh().vertices[p[2].vertexIndex])}};
+      auto& vertices = kdTree.GetMesh().vertices;
+      auto p0 = vertices[p[0].vertexIndex];
+      auto p1 = vertices[p[1].vertexIndex];
+      auto p2 = vertices[p[2].vertexIndex];
 
-      Triangle::Intersection intersection;
-      bool hitFound = IntersectTriangle(ray, triangle, intersection);
+      Triangle_Intersection intersection;
+      bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
 
       if (hitFound && intersection.t < bruteForceIntersection.t) {
         bruteForceIntersection.t = intersection.t;

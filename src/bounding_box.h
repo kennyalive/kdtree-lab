@@ -1,49 +1,37 @@
 #pragma once
 
 #include "ray.h"
-#include "vector.h"
+
 #include <algorithm>
 #include <limits>
 
-template <typename T>
-struct TBoundingBox {
-  TVector<T> minPoint;
-  TVector<T> maxPoint;
+struct Bounding_Box {
+  Vector min_point;
+  Vector max_point;
 
-  TBoundingBox()
-  : minPoint(TVector<T>(std::numeric_limits<T>::infinity()))
-  , maxPoint(TVector<T>(-std::numeric_limits<T>::infinity()))
-  {
-  }
+  Bounding_Box()
+  : min_point(Vector(std::numeric_limits<float>::infinity()))
+  , max_point(Vector(-std::numeric_limits<float>::infinity()))
+  {}
 
-  TBoundingBox(TVector<T> minPoint, TVector<T> maxPoint)
-  : minPoint(minPoint)
-  , maxPoint(maxPoint)
-  {
-  }
+  Bounding_Box(Vector min_point, Vector max_point)
+  : min_point(min_point)
+  , max_point(max_point)
+  {}
 
-  template <typename T2>
-  explicit TBoundingBox(const TBoundingBox<T2>& other)
-  : minPoint(other.minPoint)
-  , maxPoint(other.maxPoint)
-  {
-  }
+  explicit Bounding_Box(Vector point)
+  : max_point(point)
+  , min_point(point)
+  {}
 
-  explicit TBoundingBox(TVector<T> point)
-  : maxPoint(point)
-  , minPoint(point)
-  {
-  }
+  void extend(Vector point) {
+    min_point.x = std::min(min_point.x, point.x);
+    min_point.y = std::min(min_point.y, point.y);
+    min_point.z = std::min(min_point.z, point.z);
 
-  void Extend(TVector<T> point)
-  {
-    minPoint.x = std::min(minPoint.x, point.x);
-    minPoint.y = std::min(minPoint.y, point.y);
-    minPoint.z = std::min(minPoint.z, point.z);
-
-    maxPoint.x = std::max(maxPoint.x, point.x);
-    maxPoint.y = std::max(maxPoint.y, point.y);
-    maxPoint.z = std::max(maxPoint.z, point.z);
+    max_point.x = std::max(max_point.x, point.x);
+    max_point.y = std::max(max_point.y, point.y);
+    max_point.z = std::max(max_point.z, point.z);
   }
 
   struct Intersection {
@@ -52,16 +40,15 @@ struct TBoundingBox {
     float t1;
   };
 
-  Intersection Intersect(const Ray& ray) const
-  {
+  Intersection intersect(const Ray& ray) const {
     float t0 = 0.0f;
     float t1 = std::numeric_limits<float>::infinity();
 
     for (int i = 0; i < 3; i++) {
       float tNear =
-          (minPoint[i] - ray.GetOrigin()[i]) * ray.GetInvDirection()[i];
+          (min_point[i] - ray.GetOrigin()[i]) * ray.GetInvDirection()[i];
       float tFar =
-          (maxPoint[i] - ray.GetOrigin()[i]) * ray.GetInvDirection()[i];
+          (max_point[i] - ray.GetOrigin()[i]) * ray.GetInvDirection()[i];
 
       if (tNear > tFar)
         std::swap(tNear, tFar);
@@ -74,17 +61,14 @@ struct TBoundingBox {
     return {true, t0, t1};
   }
 
-  static TBoundingBox<T> Union(const TBoundingBox<T>& bounds,
-                               const TBoundingBox<T>& bounds2)
+  static Bounding_Box get_union(const Bounding_Box& bounds, const Bounding_Box& bounds2)
   {
-    return TBoundingBox<T>(
-        TVector<T>(std::min(bounds.minPoint.x, bounds2.minPoint.x),
-                   std::min(bounds.minPoint.y, bounds2.minPoint.y),
-                   std::min(bounds.minPoint.z, bounds2.minPoint.z)),
-        TVector<T>(std::max(bounds.maxPoint.x, bounds2.maxPoint.x),
-                   std::max(bounds.maxPoint.y, bounds2.maxPoint.y),
-                   std::max(bounds.maxPoint.z, bounds2.maxPoint.z)));
+    return Bounding_Box(
+        Vector(std::min(bounds.min_point.x, bounds2.min_point.x),
+               std::min(bounds.min_point.y, bounds2.min_point.y),
+               std::min(bounds.min_point.z, bounds2.min_point.z)),
+        Vector(std::max(bounds.max_point.x, bounds2.max_point.x),
+               std::max(bounds.max_point.y, bounds2.max_point.y),
+               std::max(bounds.max_point.z, bounds2.max_point.z)));
   }
 };
-
-using BoundingBox = TBoundingBox<float>;

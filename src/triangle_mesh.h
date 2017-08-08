@@ -1,7 +1,7 @@
 #pragma once
 
 #include "bounding_box.h"
-#include "vector.h"
+
 #include <array>
 #include <cstdint>
 #include <vector>
@@ -20,6 +20,6 @@ struct TriangleMesh {
 
   int32_t GetTriangleCount() const;
   int32_t GetVertexCount() const;
-  BoundingBox GetTriangleBounds(int32_t triangleIndex) const;
-  BoundingBox GetBounds() const;
+  Bounding_Box GetTriangleBounds(int32_t triangleIndex) const;
+  Bounding_Box GetBounds() const;
 };

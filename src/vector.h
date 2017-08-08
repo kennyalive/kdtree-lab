@@ -3,123 +3,96 @@
 #include <cassert>
 #include <cmath>
 
-template <typename T>
-struct TVector {
-  T x, y, z;
+struct Vector {
+  float x;
+  float y;
+  float z;
 
-  TVector()
-  : x(0)
-  , y(0)
-  , z(0)
-  {
-  }
+  Vector()
+  : x(0.f)
+  , y(0.f)
+  , z(0.f)
+  {}
 
-  TVector(T value)
+  Vector(float value)
   : x(value)
   , y(value)
   , z(value)
-  {
-  }
+  {}
 
-  TVector(T _x, T _y, T _z)
-  : x(_x)
-  , y(_y)
-  , z(_z)
-  {
-  }
+  Vector(float x, float y, float z)
+  : x(x)
+  , y(y)
+  , z(z)
+  {}
 
-  template <typename T2>
-  TVector(const TVector<T2>& other)
-  : x(other.x)
-  , y(other.y)
-  , z(other.z)
-  {
-  }
-
-  TVector& operator+=(const TVector& v)
-  {
+  Vector& operator+=(const Vector& v) {
     x += v.x;
     y += v.y;
     z += v.z;
     return *this;
   }
 
-  TVector operator+(const TVector& v) const
-  {
-    return TVector(x + v.x, y + v.y, z + v.z);
+  Vector operator+(const Vector& v) const {
+    return Vector(x + v.x, y + v.y, z + v.z);
   }
 
-  TVector operator-(const TVector& v) const
-  {
-    return TVector(x - v.x, y - v.y, z - v.z);
+  Vector operator-(const Vector& v) const {
+    return Vector(x - v.x, y - v.y, z - v.z);
   }
 
-  TVector operator*(T value) const
-  {
-    return TVector(x * value, y * value, z * value);
+  Vector operator*(float value) const {
+    return Vector(x * value, y * value, z * value);
   }
 
-  TVector operator/(T value) const
-  {
-    const T inv_value = 1.0f / value;
-    return TVector(x * inv_value, y * inv_value, z * inv_value);
+  Vector operator/(float value) const {
+    const float inv_value = 1.0f / value;
+    return Vector(x * inv_value, y * inv_value, z * inv_value);
   }
 
-  bool operator==(const TVector& v) const
-  {
+  bool operator==(const Vector& v) const {
     return x == v.x && y == v.y && z == v.z;
   }
 
-  bool operator!=(const TVector& v) const
-  {
+  bool operator!=(const Vector& v) const {
     return !(*this == v);
   }
 
-  T operator[](int index) const
-  {
+  float operator[](int index) const {
     assert(index >= 0 && index < 3);
     return (&x)[index];
   }
 
-  T& operator[](int index)
-  {
+  float& operator[](int index) {
     assert(index >= 0 && index < 3);
     return (&x)[index];
   }
 
-  T Length2() const
-  {
-    return x * x + y * y + z * z;
+  float length_squared() const {
+    return x*x + y*y + z*z;
   }
 
-  T Length() const
-  {
-    return sqrt(Length2());
+  float length() const {
+    return std::sqrt(length_squared());
   }
 
-  TVector GetNormalized() const
-  {
-    return *this / Length();
+  Vector normalized() const {
+    return *this / length();
   }
 };
 
-using Vector = TVector<float>;
-
-template <typename T>
-inline TVector<T> operator*(T value, const TVector<T>& v)
-{
-  return v * value;
+inline Vector operator*(float value, const Vector& v) {
+    return v * value;
 }
 
-template <typename T>
-inline T DotProduct(const TVector<T>& a, const TVector<T>& b)
-{
-  return a.x * b.x + a.y * b.y + a.z * b.z;
+inline float dot(const Vector& a, const Vector& b) {
+    return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
-template <typename T>
-inline TVector<T> CrossProduct(const TVector<T>& a, const TVector<T>& b)
-{
-  return TVector<T>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z,
-                    a.x * b.y - a.y * b.x);
+inline Vector cross(const Vector& a, const Vector& b) {
+    return Vector(
+        a.y*b.z - a.z*b.y,
+        a.z*b.x - a.x*b.z,
+        a.x*b.y - a.y*b.x
+    );
 }

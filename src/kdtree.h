@@ -30,14 +30,14 @@ public:
   bool Intersect(const Ray& ray, Intersection& intersection) const;
 
   const TriangleMesh& GetMesh() const;
-  const BoundingBox& GetMeshBounds() const;
+  const Bounding_Box& GetMeshBounds() const;
 
   uint64_t GetHash() const;
 
 private:
   void IntersectLeafTriangles(
       const Ray& ray, Node leaf,
-      Triangle::Intersection& closestIntersection) const;
+      Triangle_Intersection& closestIntersection) const;
 
 private:
   friend class KdTreeBuilder;
@@ -127,5 +127,5 @@ private:
   const std::vector<Node> nodes;
   const std::vector<int32_t> triangleIndices;
   const TriangleMesh& mesh;
-  const BoundingBox meshBounds;
+  const Bounding_Box meshBounds;
 };

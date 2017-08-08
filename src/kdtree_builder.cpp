@@ -37,11 +37,11 @@ KdTree KdTreeBuilder::BuildTree()
 
   // initialize bounding boxes
   triangleBounds.resize(trianglesCount);
-  BoundingBox meshBounds;
+  Bounding_Box meshBounds;
 
   for (auto i = 0; i < trianglesCount; i++) {
     triangleBounds[i] = mesh.GetTriangleBounds(i);
-    meshBounds = BoundingBox::Union(meshBounds, triangleBounds[i]);
+    meshBounds = Bounding_Box::get_union(meshBounds, triangleBounds[i]);
   }
 
   // initialize working memory
@@ -66,7 +66,7 @@ const KdTreeBuilder::BuildStats& KdTreeBuilder::GetBuildStats() const
   return buildStats;
 }
 
-void KdTreeBuilder::BuildNode(const BoundingBox& nodeBounds,
+void KdTreeBuilder::BuildNode(const Bounding_Box& nodeBounds,
                               const int32_t* nodeTriangles,
                               int32_t nodeTrianglesCount, int depth,
                               int32_t* triangles0, int32_t* triangles1)
@@ -108,15 +108,15 @@ void KdTreeBuilder::BuildNode(const BoundingBox& nodeBounds,
   auto thisNodeIndex = static_cast<int32_t>(nodes.size());
   nodes.push_back(KdTree::Node());
 
-  BoundingBox bounds0 = nodeBounds;
-  bounds0.maxPoint[split.axis] = splitPosition;
+  Bounding_Box bounds0 = nodeBounds;
+  bounds0.max_point[split.axis] = splitPosition;
   BuildNode(bounds0, triangles0, n0, depth - 1, triangles0, triangles1 + n1);
 
   auto aboveChild = static_cast<int32_t>(nodes.size());
   nodes[thisNodeIndex].InitInteriorNode(split.axis, aboveChild, splitPosition);
 
-  BoundingBox bounds1 = nodeBounds;
-  bounds1.minPoint[split.axis] = splitPosition;
+  Bounding_Box bounds1 = nodeBounds;
+  bounds1.min_point[split.axis] = splitPosition;
   BuildNode(bounds1, triangles1, n1, depth - 1, triangles0, triangles1);
 }
 
@@ -131,22 +131,20 @@ void KdTreeBuilder::CreateLeaf(const int32_t* nodeTriangles,
     node.InitLeafWithSingleTriangle(nodeTriangles[0]);
   }
   else {
-    node.InitLeafWithMultipleTriangles(
-        nodeTrianglesCount, static_cast<int32_t>(triangleIndices.size()));
-    triangleIndices.insert(triangleIndices.end(), nodeTriangles,
-                           nodeTriangles + nodeTrianglesCount);
+    node.InitLeafWithMultipleTriangles(nodeTrianglesCount, static_cast<int32_t>(triangleIndices.size()));
+    triangleIndices.insert(triangleIndices.end(), nodeTriangles, nodeTriangles + nodeTrianglesCount);
   }
   nodes.push_back(node);
 }
 
-KdTreeBuilder::Split KdTreeBuilder::SelectSplit(const BoundingBox& nodeBounds,
+KdTreeBuilder::Split KdTreeBuilder::SelectSplit(const Bounding_Box& nodeBounds,
                                                 const int32_t* nodeTriangles,
                                                 int32_t nodeTrianglesCount)
 {
   // Determine axes iteration order.
   int axes[3];
   if (buildParams.splitAlongTheLongestAxis) {
-    Vector diag = nodeBounds.maxPoint - nodeBounds.minPoint;
+    Vector diag = nodeBounds.max_point - nodeBounds.min_point;
     if (diag.x >= diag.y && diag.x >= diag.z) {
       axes[0] = 0;
       axes[1] = diag.y >= diag.z ? 1 : 2;
@@ -175,10 +173,10 @@ KdTreeBuilder::Split KdTreeBuilder::SelectSplit(const BoundingBox& nodeBounds,
     // initialize edges
     for (int32_t i = 0; i < nodeTrianglesCount; i++) {
       auto triangle = static_cast<uint32_t>(nodeTriangles[i]);
-      edgesBuffer[2 * i + 0] = {triangleBounds[triangle].minPoint[axis],
+      edgesBuffer[2 * i + 0] = {triangleBounds[triangle].min_point[axis],
                                 triangle | 0};
 
-      edgesBuffer[2 * i + 1] = {triangleBounds[triangle].maxPoint[axis],
+      edgesBuffer[2 * i + 1] = {triangleBounds[triangle].max_point[axis],
                                 triangle | BoundEdge::endMask};
     }
     std::stable_sort(edgesBuffer.data(),
@@ -203,10 +201,10 @@ KdTreeBuilder::Split KdTreeBuilder::SelectSplit(const BoundingBox& nodeBounds,
       auto triangle = static_cast<uint32_t>(nodeTriangles[i]);
 
       edgesBuffer[2 * i + 0] = {
-          triangleBounds[triangle].minPoint[bestSplit.axis], triangle | 0};
+          triangleBounds[triangle].min_point[bestSplit.axis], triangle | 0};
 
       edgesBuffer[2 * i + 1] = {
-          triangleBounds[triangle].maxPoint[bestSplit.axis],
+          triangleBounds[triangle].max_point[bestSplit.axis],
           triangle | BoundEdge::endMask};
     }
     std::stable_sort(edgesBuffer.data(),
@@ -217,12 +215,12 @@ KdTreeBuilder::Split KdTreeBuilder::SelectSplit(const BoundingBox& nodeBounds,
 }
 
 KdTreeBuilder::Split KdTreeBuilder::SelectSplitForAxis(
-    const BoundingBox& nodeBounds, int32_t nodeTrianglesCount, int axis) const
+    const Bounding_Box& nodeBounds, int32_t nodeTrianglesCount, int axis) const
 {
   static const int otherAxis[3][2] = {{1, 2}, {0, 2}, {0, 1}};
   const int otherAxis0 = otherAxis[axis][0];
   const int otherAxis1 = otherAxis[axis][1];
-  const Vector diag = nodeBounds.maxPoint - nodeBounds.minPoint;
+  const Vector diag = nodeBounds.max_point - nodeBounds.min_point;
 
   const float s0 = 2.0f * (diag[otherAxis0] * diag[otherAxis1]);
   const float d0 = 2.0f * (diag[otherAxis0] + diag[otherAxis1]);
@@ -257,9 +255,9 @@ KdTreeBuilder::Split KdTreeBuilder::SelectSplitForAxis(
     numAbove -= middleEdge - i;
 
     float t = edge.positionOnAxis;
-    if (t > nodeBounds.minPoint[axis] && t < nodeBounds.maxPoint[axis]) {
-      auto belowS = s0 + d0 * (t - nodeBounds.minPoint[axis]);
-      auto aboveS = s0 + d0 * (nodeBounds.maxPoint[axis] - t);
+    if (t > nodeBounds.min_point[axis] && t < nodeBounds.max_point[axis]) {
+      auto belowS = s0 + d0 * (t - nodeBounds.min_point[axis]);
+      auto aboveS = s0 + d0 * (nodeBounds.max_point[axis] - t);
 
       auto pBelow = belowS * invTotalS;
       auto pAbove = aboveS * invTotalS;

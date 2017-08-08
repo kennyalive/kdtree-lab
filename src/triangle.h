@@ -1,20 +1,14 @@
 #pragma once
 
-#include "ray.h"
-#include "vector.h"
-#include <array>
 #include <limits>
 
-struct Triangle {
-  std::array<Vector, 3> points;
+class Ray;
+struct Vector;
 
-  struct Intersection {
+struct Triangle_Intersection {
     float t = std::numeric_limits<float>::infinity();
-    float epsilon = 0.0;
     float b1 = 0.0;
     float b2 = 0.0;
-  };
 };
 
-bool IntersectTriangle(const Ray& ray, const Triangle& triangle,
-                       Triangle::Intersection& intersection);
+bool intersect_triangle(const Ray& ray, const Vector& p0, const Vector& p1, const Vector& p2, Triangle_Intersection& intersection);
