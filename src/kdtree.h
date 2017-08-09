@@ -32,15 +32,13 @@ public:
   const TriangleMesh& GetMesh() const;
   const Bounding_Box& GetMeshBounds() const;
 
-  uint64_t GetHash() const;
-
 private:
   void IntersectLeafTriangles(
       const Ray& ray, Node leaf,
       Triangle_Intersection& closestIntersection) const;
 
 private:
-  friend class KdTreeBuilder;
+  friend class KdTree_Builder;
 
   enum { maxTraversalDepth = 64 };
 

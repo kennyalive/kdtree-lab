@@ -1,24 +1,11 @@
 #pragma once
 
-#include "bounding_box.h"
 #include "kdtree.h"
 #include <cstdint>
-#include <vector>
 
 struct TriangleMesh;
 
-class KdTreeBuilder {
-public:
-  struct BuildParams;
-  struct BuildStats;
-
-  KdTreeBuilder(const TriangleMesh& mesh, BuildParams buildParams);
-
-  KdTree BuildTree();
-  const BuildStats& GetBuildStats() const;
-
-public:
-  struct BuildParams {
+struct KdTree_Build_Params {
     float intersectionCost = 80;
     float traversalCost = 1;
     float emptyBonus = 0.3f;
@@ -26,12 +13,9 @@ public:
     bool splitAlongTheLongestAxis = false;
     // the actual amout of leaf triangles can be larger
     int leafTrianglesLimit = 2;
-    bool collectStats = true;
-  };
+};
 
-  struct BuildStats {
-    BuildStats(bool enabled);
-
+struct KdTree_Build_Stats {
     void NewLeaf(int leafTriangles, int depth);
     void FinalizeStats();
     void Print() const;
@@ -44,72 +28,9 @@ public:
     double averageDepth = 0.0;
     double depthStandardDeviation = 0.0;
 
-  private:
-    bool enabled = true;
+private:
     int64_t trianglesPerLeafAccumulated = 0;
     std::vector<uint8_t> leafDepthValues;
-  }; // BuildStats
-
-private:
-  struct BoundEdge {
-    float positionOnAxis;
-    uint32_t triangleAndFlag;
-
-    enum : uint32_t { endMask = 0x80000000 };
-    enum : uint32_t { triangleMask = 0x7fffffff };
-
-    bool IsStart() const
-    {
-      return (triangleAndFlag & endMask) == 0;
-    }
-
-    bool IsEnd() const
-    {
-      return !IsStart();
-    }
-
-    int32_t GetTriangleIndex() const
-    {
-      return static_cast<int32_t>(triangleAndFlag & triangleMask);
-    }
-
-    static bool Less(BoundEdge edge1, BoundEdge edge2)
-    {
-      if (edge1.positionOnAxis == edge2.positionOnAxis)
-        return edge1.IsEnd() && edge2.IsStart();
-      else
-        return edge1.positionOnAxis < edge2.positionOnAxis;
-    }
-  }; // BoundEdge
-
-  struct Split {
-    int32_t edge;
-    int axis;
-    float cost;
-  };
-
-private:
-  void BuildNode(const Bounding_Box& nodeBounds, const int32_t* nodeTriangles,
-                 int32_t nodeTrianglesCount, int depth, int32_t* triangles0,
-                 int32_t* triangles1);
-
-  void CreateLeaf(const int32_t* nodeTriangles, int32_t nodeTrianglesCount);
-
-  Split SelectSplit(const Bounding_Box& nodeBounds,
-                    const int32_t* nodeTriangles, int32_t nodeTrianglesCount);
-
-  Split SelectSplitForAxis(const Bounding_Box& nodeBounds,
-                           int32_t nodeTrianglesCount, int axis) const;
-
-private:
-  const TriangleMesh& mesh;
-  BuildParams buildParams;
-  BuildStats buildStats;
-
-  std::vector<Bounding_Box> triangleBounds;
-  std::vector<BoundEdge> edgesBuffer;
-  std::vector<int32_t> trianglesBuffer;
-
-  std::vector<KdTree::Node> nodes;
-  std::vector<int32_t> triangleIndices;
 };
+
+KdTree build_kdtree(const TriangleMesh& mesh, const KdTree_Build_Params& build_params, KdTree_Build_Stats* stats = nullptr);

@@ -1,11 +1,78 @@
 #include "common.h"
 #include "kdtree_builder.h"
 #include "triangle_mesh.h"
+
 #include <algorithm>
 #include <cmath>
 #include <numeric>
 #include <string>
 #include <vector>
+
+struct BoundEdge {
+    float positionOnAxis;
+    uint32_t triangleAndFlag;
+
+    enum : uint32_t { endMask = 0x80000000 };
+    enum : uint32_t { triangleMask = 0x7fffffff };
+
+    bool IsStart() const
+    {
+        return (triangleAndFlag & endMask) == 0;
+    }
+
+    bool IsEnd() const
+    {
+        return !IsStart();
+    }
+
+    int32_t GetTriangleIndex() const
+    {
+        return static_cast<int32_t>(triangleAndFlag & triangleMask);
+    }
+
+    static bool Less(BoundEdge edge1, BoundEdge edge2)
+    {
+        if (edge1.positionOnAxis == edge2.positionOnAxis)
+            return edge1.IsEnd() && edge2.IsStart();
+        else
+            return edge1.positionOnAxis < edge2.positionOnAxis;
+    }
+};
+
+struct Split {
+    int32_t edge;
+    int axis;
+    float cost;
+};
+
+class KdTree_Builder {
+public:
+    KdTree_Builder(const TriangleMesh& mesh, const KdTree_Build_Params& buildParams, KdTree_Build_Stats* stats);
+    KdTree build();
+
+private:
+    void BuildNode(const Bounding_Box& nodeBounds, const int32_t* nodeTriangles, int32_t nodeTrianglesCount, int depth, int32_t* triangles0, int32_t* triangles1);
+    void CreateLeaf(const int32_t* nodeTriangles, int32_t nodeTrianglesCount);
+    Split SelectSplit(const Bounding_Box& nodeBounds, const int32_t* nodeTriangles, int32_t nodeTrianglesCount);
+    Split SelectSplitForAxis(const Bounding_Box& nodeBounds, int32_t nodeTrianglesCount, int axis) const;
+
+private:
+    const TriangleMesh& mesh;
+    KdTree_Build_Params buildParams;
+    KdTree_Build_Stats* stats;
+
+    std::vector<Bounding_Box> triangleBounds;
+    std::vector<BoundEdge> edgesBuffer;
+    std::vector<int32_t> trianglesBuffer;
+    std::vector<KdTree::Node> nodes;
+    std::vector<int32_t> triangleIndices;
+};
+
+KdTree build_kdtree(const TriangleMesh& mesh, const KdTree_Build_Params& build_params, KdTree_Build_Stats* stats) {
+    KdTree_Builder builder(mesh, build_params, stats);
+    return builder.build();
+}
+
 
 enum {
   // max count is chosen such that maxTrianglesCount * 2 is still an int32_t,
@@ -13,25 +80,23 @@ enum {
   maxTrianglesCount = 0x3fffffff // max ~ 1 billion triangles
 };
 
-KdTreeBuilder::KdTreeBuilder(const TriangleMesh& mesh, BuildParams buildParams)
+KdTree_Builder::KdTree_Builder(const TriangleMesh& mesh, const KdTree_Build_Params& buildParams, KdTree_Build_Stats* stats)
 : mesh(mesh)
-, buildStats(buildParams.collectStats)
+, buildParams(buildParams)
+, stats(stats)
 {
   if (mesh.GetTriangleCount() > maxTrianglesCount) {
     RuntimeError("exceeded the maximum number of mesh triangles: " +
                  std::to_string(maxTrianglesCount));
   }
 
-  if (buildParams.maxDepth <= 0) {
-    buildParams.maxDepth = std::lround(
-        8.0 + 1.3 * std::floor(std::log2(mesh.GetTriangleCount())));
+  if (this->buildParams.maxDepth <= 0) {
+    this->buildParams.maxDepth = std::lround(8.0 + 1.3 * std::floor(std::log2(mesh.GetTriangleCount())));
   }
-  buildParams.maxDepth = std::min(buildParams.maxDepth,
-                                  static_cast<int>(KdTree::maxTraversalDepth));
-  this->buildParams = buildParams;
+  this->buildParams.maxDepth = std::min(this->buildParams.maxDepth, static_cast<int>(KdTree::maxTraversalDepth));
 }
 
-KdTree KdTreeBuilder::BuildTree()
+KdTree KdTree_Builder::build()
 {
   const auto trianglesCount = mesh.GetTriangleCount();
 
@@ -57,16 +122,13 @@ KdTree KdTreeBuilder::BuildTree()
             buildParams.maxDepth, trianglesBuffer.data(),
             trianglesBuffer.data() + trianglesCount);
 
-  buildStats.FinalizeStats();
+  if (stats != nullptr)
+      stats->FinalizeStats();
+
   return KdTree(std::move(nodes), std::move(triangleIndices), mesh);
 }
 
-const KdTreeBuilder::BuildStats& KdTreeBuilder::GetBuildStats() const
-{
-  return buildStats;
-}
-
-void KdTreeBuilder::BuildNode(const Bounding_Box& nodeBounds,
+void KdTree_Builder::BuildNode(const Bounding_Box& nodeBounds,
                               const int32_t* nodeTriangles,
                               int32_t nodeTrianglesCount, int depth,
                               int32_t* triangles0, int32_t* triangles1)
@@ -78,7 +140,10 @@ void KdTreeBuilder::BuildNode(const Bounding_Box& nodeBounds,
   // check if leaf node should be created
   if (nodeTrianglesCount <= buildParams.leafTrianglesLimit || depth == 0) {
     CreateLeaf(nodeTriangles, nodeTrianglesCount);
-    buildStats.NewLeaf(nodeTrianglesCount, buildParams.maxDepth - depth);
+
+    if (stats != nullptr)
+        stats->NewLeaf(nodeTrianglesCount, buildParams.maxDepth - depth);
+
     return;
   }
 
@@ -86,7 +151,10 @@ void KdTreeBuilder::BuildNode(const Bounding_Box& nodeBounds,
   auto split = SelectSplit(nodeBounds, nodeTriangles, nodeTrianglesCount);
   if (split.edge == -1) {
     CreateLeaf(nodeTriangles, nodeTrianglesCount);
-    buildStats.NewLeaf(nodeTrianglesCount, buildParams.maxDepth - depth);
+
+    if (stats != nullptr)
+        stats->NewLeaf(nodeTrianglesCount, buildParams.maxDepth - depth);
+
     return;
   }
   float splitPosition = edgesBuffer[split.edge].positionOnAxis;
@@ -120,7 +188,7 @@ void KdTreeBuilder::BuildNode(const Bounding_Box& nodeBounds,
   BuildNode(bounds1, triangles1, n1, depth - 1, triangles0, triangles1);
 }
 
-void KdTreeBuilder::CreateLeaf(const int32_t* nodeTriangles,
+void KdTree_Builder::CreateLeaf(const int32_t* nodeTriangles,
                                int32_t nodeTrianglesCount)
 {
   KdTree::Node node;
@@ -137,7 +205,7 @@ void KdTreeBuilder::CreateLeaf(const int32_t* nodeTriangles,
   nodes.push_back(node);
 }
 
-KdTreeBuilder::Split KdTreeBuilder::SelectSplit(const Bounding_Box& nodeBounds,
+Split KdTree_Builder::SelectSplit(const Bounding_Box& nodeBounds,
                                                 const int32_t* nodeTriangles,
                                                 int32_t nodeTrianglesCount)
 {
@@ -214,7 +282,7 @@ KdTreeBuilder::Split KdTreeBuilder::SelectSplit(const Bounding_Box& nodeBounds,
   return bestSplit;
 }
 
-KdTreeBuilder::Split KdTreeBuilder::SelectSplitForAxis(
+Split KdTree_Builder::SelectSplitForAxis(
     const Bounding_Box& nodeBounds, int32_t nodeTrianglesCount, int axis) const
 {
   static const int otherAxis[3][2] = {{1, 2}, {0, 2}, {0, 1}};
@@ -281,16 +349,8 @@ KdTreeBuilder::Split KdTreeBuilder::SelectSplitForAxis(
   return bestSplit;
 }
 
-KdTreeBuilder::BuildStats::BuildStats(bool enabled)
-: enabled(enabled)
+void KdTree_Build_Stats::NewLeaf(int leafTriangles, int depth)
 {
-}
-
-void KdTreeBuilder::BuildStats::NewLeaf(int leafTriangles, int depth)
-{
-  if (!enabled)
-    return;
-
   leafCount++;
 
   if (leafTriangles == 0) {
@@ -305,11 +365,8 @@ void KdTreeBuilder::BuildStats::NewLeaf(int leafTriangles, int depth)
   }
 }
 
-void KdTreeBuilder::BuildStats::FinalizeStats()
+void KdTree_Build_Stats::FinalizeStats()
 {
-  if (!enabled)
-    return;
-
   auto notEmptyLeafCount = leafCount - emptyLeafCount;
 
   trianglesPerLeaf =
@@ -330,7 +387,7 @@ void KdTreeBuilder::BuildStats::FinalizeStats()
   depthStandardDeviation = sqrt(accum / notEmptyLeafCount);
 }
 
-void KdTreeBuilder::BuildStats::Print() const {
+void KdTree_Build_Stats::Print() const {
     printf("leafCount = %dK\n", leafCount / 1024);
     printf("emptyLeafCount = %dK\n", emptyLeafCount / 1024);
     printf("single_triangle_leaf_count = %dK\n", single_triangle_leaf_count / 1024);

@@ -236,7 +236,7 @@ void ValidateKdTree(const KdTree& kdTree, int raysCount)
              bruteForceHitFound ? "true" : "false", kdTreeIntersection.t,
              kdTreeIntersection.t, bruteForceIntersection.t,
              bruteForceIntersection.t, o.x, o.y, o.z, d.x, d.y, d.z);
-      ValidationError("KdTree traversal error detected");
+      RuntimeError("KdTree traversal error detected");
     }
 
     if (bruteForceHitFound) {

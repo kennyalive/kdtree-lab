@@ -235,16 +235,3 @@ const Bounding_Box& KdTree::GetMeshBounds() const
 {
   return meshBounds;
 }
-
-uint64_t KdTree::GetHash() const
-{
-  uint64_t hash = 0;
-  for (const auto& node : nodes) {
-    hash = CombineHashes(hash, node.word0);
-    hash = CombineHashes(hash, node.word1);
-  }
-  for (int32_t index : triangleIndices) {
-    hash = CombineHashes(hash, uint32_t(index));
-  }
-  return hash;
-}

@@ -82,15 +82,15 @@ int main() {
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
     if (build_tree) {
-        KdTreeBuilder::BuildParams params;
-        KdTreeBuilder builder(*mesh, params);
+        KdTree_Build_Params params;
+        KdTree_Build_Stats stats;
 
         Timer timer;
-        KdTree kdtree = builder.BuildTree();
+        KdTree kdtree = build_kdtree(*mesh, params, &stats);
         int time = timer.ElapsedMilliseconds();
         printf("KdTree build time = %dms\n", time);
 
-        builder.GetBuildStats().Print();
+        stats.Print();
         kdtree.PrintInfo();
         kdtree.SaveToFile("test.kdtree");
         return 0;

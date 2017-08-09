@@ -35,37 +35,6 @@ inline void RuntimeError(const std::string& message)
   exit(1);
 }
 
-inline void ValidationError(const std::string& message)
-{
-  std::cout << "validation error: " << message << std::endl;
-  exit(2);
-}
-
-template <typename T>
-void AssertEquals(T actual, T expected, const std::string& message)
-{
-  if (actual != expected) {
-    std::ostringstream stream;
-    stream << message << std::endl
-           << "actual value " << actual << ", expected value " << expected
-           << std::endl;
-    ValidationError(stream.str());
-  }
-}
-
-inline void AssertEqualsHex(uint64_t actual, uint64_t expected,
-                            const std::string& message)
-{
-  if (actual != expected) {
-    std::ostringstream stream;
-    stream << message << std::endl
-      << std::hex
-      << "actual value " << actual << ", expected value " << expected
-      << std::endl;
-    ValidationError(stream.str());
-  }
-}
-
 inline std::string JoinPath(std::string path1, std::string path2)
 {
   if (!path1.empty() && (path1.back() == '/' || path1.back() == '\\'))
