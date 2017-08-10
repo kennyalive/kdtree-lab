@@ -11,7 +11,7 @@ public:
   , direction(direction)
   , invDirection(1.0f / direction.x, 1.0f / direction.y, 1.0f / direction.z)
   {
-    assert(std::abs(direction.Length() - 1.0f) < 1e-6f);
+    assert(std::abs(direction.length() - 1.0f) < 1e-6f);
   }
 
   const Vector& GetOrigin() const

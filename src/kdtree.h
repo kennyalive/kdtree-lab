@@ -9,6 +9,23 @@
 #include <cstdint>
 #include <vector>
 
+struct KdTree_Stats {
+    int32_t leaf_count = 0;
+    int32_t empty_leaf_count = 0;
+    int32_t single_triangle_leaf_count = 0;
+    int perfect_depth = 0;
+
+    struct Leaf_Stats {
+        float average_triangle_count = 0.0f;
+        float average_depth = 0.0f;
+        float depth_standard_deviation = 0.0f;
+    };
+    Leaf_Stats not_empty_leaf_stats;
+    Leaf_Stats empty_leaf_stats; // empty_leaf_stats.average_triangle_count == 0
+
+    void Print();
+};
+
 class KdTree {
   struct Node;
 
@@ -31,6 +48,8 @@ public:
 
   const TriangleMesh& GetMesh() const;
   const Bounding_Box& GetMeshBounds() const;
+
+  KdTree_Stats calculate_stats() const;
 
 private:
   void IntersectLeafTriangles(

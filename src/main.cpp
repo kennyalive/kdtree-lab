@@ -6,7 +6,7 @@
 #include "triangle_mesh.h"
 #include "triangle_mesh_loader.h"
 #include "vector.h"
-#include <embree2/rtcore.h>
+#include <embree2/rtcore.h> 
 #include <pmmintrin.h>
 #include <string>
 #include <vector>
@@ -27,6 +27,9 @@ std::unique_ptr<TriangleMesh> mesh = LoadTriangleMesh(model_path);
 
 void main_kdtree() {
     auto kdtree = std::unique_ptr<KdTree>(new KdTree(kdtree_path, *mesh));
+
+    kdtree->calculate_stats().Print();
+    printf("\n");
 
     printf("shooting rays (kdtree)...\n");
     random_init();
@@ -83,16 +86,15 @@ int main() {
 
     if (build_tree) {
         KdTree_Build_Params params;
-        KdTree_Build_Stats stats;
 
         Timer timer;
-        KdTree kdtree = build_kdtree(*mesh, params, &stats);
+        KdTree kdtree = build_kdtree(*mesh, params);
         int time = timer.ElapsedMilliseconds();
         printf("KdTree build time = %dms\n", time);
 
-        stats.Print();
         kdtree.PrintInfo();
         kdtree.SaveToFile("test.kdtree");
+        printf("\n");
         return 0;
     }
 
