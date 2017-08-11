@@ -28,9 +28,17 @@ std::unique_ptr<TriangleMesh> mesh = LoadTriangleMesh(model_path);
 void main_kdtree() {
     auto kdtree = std::unique_ptr<KdTree>(new KdTree(kdtree_path, *mesh));
 
+    printf("[mesh]\n");
+    printf("vertex count = %d\n", mesh->GetVertexCount());
+    printf("triangle count = %d\n", mesh->GetTriangleCount());
+    printf("vertices size = %zdK\n", mesh->vertices.size() * sizeof(Vector) / 1024);
+    printf("triangles size = %zdK\n", mesh->triangles.size() * sizeof(TriangleMesh::Triangle) / 1024);
+    printf("\n");
+
     kdtree->calculate_stats().Print();
     printf("\n");
 
+    printf("=========================\n");
     printf("shooting rays (kdtree)...\n");
     random_init();
 
@@ -86,13 +94,11 @@ int main() {
 
     if (build_tree) {
         KdTree_Build_Params params;
-
         Timer timer;
         KdTree kdtree = build_kdtree(*mesh, params);
         int time = timer.ElapsedMilliseconds();
         printf("KdTree build time = %dms\n", time);
 
-        kdtree.PrintInfo();
         kdtree.SaveToFile("test.kdtree");
         printf("\n");
         return 0;

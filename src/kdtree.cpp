@@ -78,16 +78,6 @@ void KdTree::SaveToFile(const std::string& fileName) const
     RuntimeError("failed to write kdTree triangle indices: " + fileName);
 }
 
-void KdTree::PrintInfo() {
-    auto nodes_size = nodes.size() * sizeof(Node);
-    printf("Nodes size: %zdK\n", nodes_size / 1024);
-    auto indices_size = triangleIndices.size() * sizeof(triangleIndices[0]);
-    printf("Triangle indices size: %zdK\n", indices_size / 1024);
-
-    printf("Total size = %zdK\n", (nodes_size + indices_size) / 1024);
-
-}
-
 bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
 {
   auto boundsIntersection = meshBounds.intersect(ray);
@@ -239,6 +229,10 @@ const Bounding_Box& KdTree::GetMeshBounds() const {
 KdTree_Stats KdTree::calculate_stats() const {
     KdTree_Stats stats;
 
+    stats.nodes_size = nodes.size() * sizeof(Node);
+    stats.triangle_indices_size = triangleIndices.size() * sizeof(triangleIndices[0]);
+    stats.node_count = static_cast<int32_t>(nodes.size());
+
     int64_t triangle_per_leaf_accumulated = 0;
 
     for (auto node  : nodes) {
@@ -312,15 +306,26 @@ KdTree_Stats KdTree::calculate_stats() const {
 }
 
 void KdTree_Stats::Print() {
+    printf("[memory consumption]\n");
+    printf("nodes_size = %zdK\n", nodes_size / 1024);
+    printf("triangle_indices_size = %zdK\n", triangle_indices_size / 1024);
+    printf("\n");
+
+    printf("[kdtree general]\n");
+    printf("node_count = %d\n", node_count);
     printf("leaf_count = %d\n", leaf_count);
     printf("empty_leaf_count = %d\n", empty_leaf_count);
     printf("single_triangle_leaf_count = %d\n", single_triangle_leaf_count);
     printf("perfect_depth = %d\n", perfect_depth);
-    printf("[not empty leaves]\n");
-    printf("average_triangle_count = %.2f\n", not_empty_leaf_stats.average_triangle_count);
+    printf("\n");
+
+    printf("[kdtree not empty leaves]\n");
     printf("average_depth = %.2f\n", not_empty_leaf_stats.average_depth);
     printf("depth_standard_deviation = %.2f\n", not_empty_leaf_stats.depth_standard_deviation);
-    printf("[empty leaves]\n");
+    printf("average_triangle_count = %.2f\n", not_empty_leaf_stats.average_triangle_count);
+    printf("\n");
+
+    printf("[kdtree empty leaves]\n");
     printf("average_depth = %.2f\n", empty_leaf_stats.average_depth);
     printf("depth_standard_deviation = %.2f\n", empty_leaf_stats.depth_standard_deviation);
 }

@@ -69,15 +69,13 @@ std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
 
   // read mesh data
   auto mesh = std::unique_ptr<TriangleMesh>(new TriangleMesh());
-  mesh->normals.resize(numTriangles);
   mesh->triangles.resize(numTriangles);
 
   std::unordered_map<Vector, int32_t, VectorHash> uniqueVertices;
   uint8_t* dataPtr = fileContent.data() + headerSize + 4;
   for (uint32_t i = 0; i < numTriangles; i++) {
     float* f = reinterpret_cast<float*>(dataPtr);
-    mesh->normals[i] = Vector(f[0], f[1], f[2]);
-    f += 3;
+    f += 3; // skip normal
 
     for (int k = 0; k < 3; ++k) {
       Vector v(f[0], f[1], f[2]);

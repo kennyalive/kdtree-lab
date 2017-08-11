@@ -15,7 +15,6 @@ struct TriangleMesh {
   };
 
   std::vector<Vector> vertices;
-  std::vector<Vector> normals;
   std::vector<Triangle> triangles;
 
   int32_t GetTriangleCount() const;

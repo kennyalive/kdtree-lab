@@ -10,15 +10,19 @@
 #include <vector>
 
 struct KdTree_Stats {
+    int64_t nodes_size = 0;
+    int64_t triangle_indices_size = 0;
+
+    int32_t node_count = 0;
     int32_t leaf_count = 0;
     int32_t empty_leaf_count = 0;
     int32_t single_triangle_leaf_count = 0;
     int perfect_depth = 0;
 
     struct Leaf_Stats {
-        float average_triangle_count = 0.0f;
         float average_depth = 0.0f;
         float depth_standard_deviation = 0.0f;
+        float average_triangle_count = 0.0f;
     };
     Leaf_Stats not_empty_leaf_stats;
     Leaf_Stats empty_leaf_stats; // empty_leaf_stats.average_triangle_count == 0
@@ -42,7 +46,6 @@ public:
   KdTree(const std::string& fileName, const TriangleMesh& mesh);
 
   void SaveToFile(const std::string& fileName) const;
-  void PrintInfo();
 
   bool Intersect(const Ray& ray, Intersection& intersection) const;
 
