@@ -63,7 +63,7 @@ private:
     std::vector<Bounding_Box> triangleBounds;
     std::vector<BoundEdge> edgesBuffer;
     std::vector<int32_t> trianglesBuffer;
-    std::vector<KdTree::Node> nodes;
+    std::vector<KdNode> nodes;
     std::vector<int32_t> triangleIndices;
 };
 
@@ -127,9 +127,9 @@ void KdTree_Builder::BuildNode(const Bounding_Box& nodeBounds,
                               int32_t nodeTrianglesCount, int depth,
                               int32_t* triangles0, int32_t* triangles1)
 {
-  if (nodes.size() >= KdTree::Node::maxNodesCount)
+  if (nodes.size() >= KdNode::maxNodesCount)
     RuntimeError("maximum number of KdTree nodes has been reached: " +
-                 std::to_string(KdTree::Node::maxNodesCount));
+                 std::to_string(KdNode::maxNodesCount));
 
   // check if leaf node should be created
   if (nodeTrianglesCount <= buildParams.leafTrianglesLimit || depth == 0) {
@@ -160,7 +160,7 @@ void KdTree_Builder::BuildNode(const Bounding_Box& nodeBounds,
 
   // add interior node and recursively create children nodes
   auto thisNodeIndex = static_cast<int32_t>(nodes.size());
-  nodes.push_back(KdTree::Node());
+  nodes.push_back(KdNode());
 
   Bounding_Box bounds0 = nodeBounds;
   bounds0.max_point[split.axis] = splitPosition;
@@ -177,7 +177,7 @@ void KdTree_Builder::BuildNode(const Bounding_Box& nodeBounds,
 void KdTree_Builder::CreateLeaf(const int32_t* nodeTriangles,
                                int32_t nodeTrianglesCount)
 {
-  KdTree::Node node;
+  KdNode node;
   if (nodeTrianglesCount == 0) {
     node.InitEmptyLeaf();
   }
