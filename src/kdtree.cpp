@@ -80,150 +80,150 @@ void KdTree::SaveToFile(const std::string& fileName) const
 
 bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
 {
-  auto boundsIntersection = meshBounds.intersect(ray);
-  if (!boundsIntersection.found)
-    return false;
+    auto boundsIntersection = meshBounds.intersect(ray);
+    if (!boundsIntersection.found)
+        return false;
 
-  struct TraversalInfo {
-    const KdNode* node;
-    float tMin;
-    float tMax;
-  };
-  TraversalInfo traversalStack[maxTraversalDepth];
-  int traversalStackSize = 0;
+    struct TraversalInfo {
+        const KdNode* node;
+        float tMin;
+        float tMax;
+    };
+    TraversalInfo traversalStack[maxTraversalDepth];
+    int traversalStackSize = 0;
 
-  float t_min = boundsIntersection.t0;
-  float t_max = boundsIntersection.t1;
+    float t_min = boundsIntersection.t0;
+    float t_max = boundsIntersection.t1;
 
-  Triangle_Intersection closest_intersection;
-  auto node = &nodes[0];
+    Triangle_Intersection closest_intersection;
+    auto node = &nodes[0];
 
-  while (t_min < closest_intersection.t) {
-    if (node->IsInteriorNode()) {
-      int axis = node->get_split_axis();
+    while (t_min < closest_intersection.t) {
+        if (node->IsInteriorNode()) {
+            int axis = node->get_split_axis();
 
-      float distance_to_split_plane = node->get_split_position() - ray.GetOrigin()[axis];
+            float distance_to_split_plane = node->get_split_position() - ray.GetOrigin()[axis];
 
-      auto belowChild = node + 1;
-      auto aboveChild = &nodes[node->get_above_child()];
+            auto belowChild = node + 1;
+            auto aboveChild = &nodes[node->get_above_child()];
 
-      if (distance_to_split_plane != 0.0) { // general case
-        const KdNode *firstChild, *secondChild;
+            if (distance_to_split_plane != 0.0) { // general case
+                const KdNode *firstChild, *secondChild;
 
-        if (distance_to_split_plane > 0.0) {
-          firstChild = belowChild;
-          secondChild = aboveChild;
+                if (distance_to_split_plane > 0.0) {
+                    firstChild = belowChild;
+                    secondChild = aboveChild;
+                }
+                else {
+                    firstChild = aboveChild;
+                    secondChild = belowChild;
+                }
+
+                // t_split != 0 (since distance_to_split_plane != 0)
+                float t_split = distance_to_split_plane * ray.GetInvDirection()[axis];
+
+                if (t_split >= t_max || t_split < 0.0)
+                    node = firstChild;
+                else if (t_split <= t_min)
+                    node = secondChild;
+                else { // t_min < t_split < t_max
+                    assert(traversalStackSize < maxTraversalDepth);
+                    traversalStack[traversalStackSize++] = {secondChild, t_split, t_max};
+                    node = firstChild;
+                    t_max = t_split;
+                }
+            }
+            else { // special case, distanceToSplitPlane == 0.0
+                if (ray.GetDirection()[axis] > 0.0) {
+                    if (t_min > 0.0)
+                        node = aboveChild;
+                    else { // t_min == 0.0
+                        assert(traversalStackSize < maxTraversalDepth);
+                        traversalStack[traversalStackSize++] = {aboveChild, 0.0, t_max};
+                        // check single point [0.0, 0.0]
+                        node = belowChild;
+                        t_max = 0.0;
+                    }
+                }
+                else if (ray.GetDirection()[axis] < 0.0) {
+                    if (t_min > 0.0)
+                        node = belowChild;
+                    else { // t_min == 0.0
+                        assert(traversalStackSize < maxTraversalDepth);
+                        traversalStack[traversalStackSize++] = {belowChild, 0.0, t_max};
+                        // check single point [0.0, 0.0]
+                        node = aboveChild;
+                        t_max = 0.0;
+                    }
+                }
+                else { // ray.direction[axis] == 0.0
+                  // for both nodes check [t_min, t_max] range
+                    assert(traversalStackSize < maxTraversalDepth);
+                    traversalStack[traversalStackSize++] = {aboveChild, t_min, t_max};
+                    node = belowChild;
+                }
+            }
         }
-        else {
-          firstChild = aboveChild;
-          secondChild = belowChild;
+        else { // leaf node
+            IntersectLeafTriangles(ray, *node, closest_intersection);
+
+            if (traversalStackSize == 0)
+                break;
+
+            --traversalStackSize;
+            node = traversalStack[traversalStackSize].node;
+            t_min = traversalStack[traversalStackSize].tMin;
+            t_max = traversalStack[traversalStackSize].tMax;
         }
+    } // while (t_min < closest_intersection.t)
 
-        // t_split != 0 (since distance_to_split_plane != 0)
-        float t_split = distance_to_split_plane * ray.GetInvDirection()[axis];
+    if (closest_intersection.t == std::numeric_limits<float>::infinity())
+        return false;
 
-        if (t_split >= t_max || t_split < 0.0)
-          node = firstChild;
-        else if (t_split <= t_min)
-          node = secondChild;
-        else { // t_min < t_split < t_max
-          assert(traversalStackSize < maxTraversalDepth);
-          traversalStack[traversalStackSize++] = {secondChild, t_split, t_max};
-          node = firstChild;
-          t_max = t_split;
-        }
-      }
-      else { // special case, distanceToSplitPlane == 0.0
-        if (ray.GetDirection()[axis] > 0.0) {
-          if (t_min > 0.0)
-            node = aboveChild;
-          else { // t_min == 0.0
-            assert(traversalStackSize < maxTraversalDepth);
-            traversalStack[traversalStackSize++] = {aboveChild, 0.0, t_max};
-            // check single point [0.0, 0.0]
-            node = belowChild;
-            t_max = 0.0;
-          }
-        }
-        else if (ray.GetDirection()[axis] < 0.0) {
-          if (t_min > 0.0)
-            node = belowChild;
-          else { // t_min == 0.0
-            assert(traversalStackSize < maxTraversalDepth);
-            traversalStack[traversalStackSize++] = {belowChild, 0.0, t_max};
-            // check single point [0.0, 0.0]
-            node = aboveChild;
-            t_max = 0.0;
-          }
-        }
-        else { // ray.direction[axis] == 0.0
-          // for both nodes check [t_min, t_max] range
-          assert(traversalStackSize < maxTraversalDepth);
-          traversalStack[traversalStackSize++] = {aboveChild, t_min, t_max};
-          node = belowChild;
-        }
-      }
-    }
-    else { // leaf node
-      IntersectLeafTriangles(ray, *node, closest_intersection);
-
-      if (traversalStackSize == 0)
-        break;
-
-      --traversalStackSize;
-      node = traversalStack[traversalStackSize].node;
-      t_min = traversalStack[traversalStackSize].tMin;
-      t_max = traversalStack[traversalStackSize].tMax;
-    }
-  } // while (t_min < closest_intersection.t)
-
-  if (closest_intersection.t == std::numeric_limits<float>::infinity())
-    return false;
-
-  intersection.t = closest_intersection.t;
-  intersection.epsilon = closest_intersection.t * 1e-3f;
-  return true;
+    intersection.t = closest_intersection.t;
+    intersection.epsilon = closest_intersection.t * 1e-3f;
+    return true;
 }
 
 void KdTree::IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const
 {
-  if (leaf.GetTrianglesCount() == 1) {
-    const auto& p = mesh.triangles[leaf.GetIndex()].points;
+    if (leaf.GetTrianglesCount() == 1) {
+        const auto& p = mesh.triangles[leaf.GetIndex()].points;
 
-    auto& p0 = mesh.vertices[p[0].vertexIndex];
-    auto& p1 = mesh.vertices[p[1].vertexIndex];
-    auto& p2 = mesh.vertices[p[2].vertexIndex];
+        auto& p0 = mesh.vertices[p[0].vertexIndex];
+        auto& p1 = mesh.vertices[p[1].vertexIndex];
+        auto& p2 = mesh.vertices[p[2].vertexIndex];
 
-    Triangle_Intersection intersection;
-    bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
-    if (hitFound && intersection.t < closestIntersection.t) {
-      closestIntersection = intersection;
+        Triangle_Intersection intersection;
+        bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
+        if (hitFound && intersection.t < closestIntersection.t) {
+            closestIntersection = intersection;
+        }
     }
-  }
-  else {
-    for (int32_t i = 0; i < leaf.GetTrianglesCount(); i++) {
-      int32_t triangleIndex = triangleIndices[leaf.GetIndex() + i];
-      const auto& p = mesh.triangles[triangleIndex].points;
+    else {
+        for (int32_t i = 0; i < leaf.GetTrianglesCount(); i++) {
+            int32_t triangleIndex = triangleIndices[leaf.GetIndex() + i];
+            const auto& p = mesh.triangles[triangleIndex].points;
 
-      auto& p0 = mesh.vertices[p[0].vertexIndex];
-      auto& p1 = mesh.vertices[p[1].vertexIndex];
-      auto& p2 = mesh.vertices[p[2].vertexIndex];
+            auto& p0 = mesh.vertices[p[0].vertexIndex];
+            auto& p1 = mesh.vertices[p[1].vertexIndex];
+            auto& p2 = mesh.vertices[p[2].vertexIndex];
 
-      Triangle_Intersection intersection;
-      bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
-      if (hitFound && intersection.t < closestIntersection.t) {
-        closestIntersection = intersection;
-      }
+            Triangle_Intersection intersection;
+            bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
+            if (hitFound && intersection.t < closestIntersection.t) {
+                closestIntersection = intersection;
+            }
+        }
     }
-  }
 }
 
 const TriangleMesh& KdTree::GetMesh() const {
-  return mesh;
+    return mesh;
 }
 
 const Bounding_Box& KdTree::GetMeshBounds() const {
-  return meshBounds;
+    return meshBounds;
 }
 
 KdTree_Stats KdTree::calculate_stats() const {
