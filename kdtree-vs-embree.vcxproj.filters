@@ -1,17 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\benchmark.cpp" />
     <ClCompile Include="src\kdtree.cpp" />
-    <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\random.cpp" />
     <ClCompile Include="src\triangle.cpp" />
     <ClCompile Include="src\triangle_mesh.cpp" />
     <ClCompile Include="src\triangle_mesh_loader.cpp" />
     <ClCompile Include="src\kdtree_builder.cpp" />
+    <ClCompile Include="src\main_triangle_intersection.cpp" />
+    <ClCompile Include="src\common.cpp" />
+    <ClCompile Include="src\main_embree.cpp" />
+    <ClCompile Include="src\main_kdtree.cpp" />
+    <ClCompile Include="src\ray_generator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\benchmark.h" />
     <ClInclude Include="src\bounding_box.h" />
     <ClInclude Include="src\kdtree.h" />
     <ClInclude Include="src\random.h" />
@@ -22,5 +24,6 @@
     <ClInclude Include="src\vector.h" />
     <ClInclude Include="src\common.h" />
     <ClInclude Include="src\kdtree_builder.h" />
+    <ClInclude Include="src\ray_generator.h" />
   </ItemGroup>
 </Project>

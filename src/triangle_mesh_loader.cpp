@@ -10,6 +10,10 @@
 #include <unordered_map>
 #include <vector>
 
+static uint64_t CombineHashes(uint64_t hash1, uint64_t hash2) {
+    return hash1 ^ (hash2 + 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
+}
+
 std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
 {
   enum {

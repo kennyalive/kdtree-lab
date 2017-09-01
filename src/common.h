@@ -1,5 +1,10 @@
 #pragma once
 
+#include "random.h"
+#include "vector.h"
+
+#include <xmmintrin.h> 
+
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -9,84 +14,66 @@
 #include <sstream>
 #include <string>
 
-class Timer {
-public:
-  Timer()
-  : begin(Clock::now())
-  {
-  }
+enum { benchmark_ray_count = 10000000 };
+enum { debug_rays = false };
+enum { debug_ray_count = 4 };
 
-  int ElapsedMilliseconds() const
-  {
-    auto duration = Clock::now() - begin;
-    auto seconds = std::chrono::duration_cast<Second>(duration).count();
-    return static_cast<int>(seconds * 1000);
-  }
-
-private:
-  using Clock = std::chrono::high_resolution_clock;
-  using Second = std::chrono::duration<double, std::ratio<1>>;
-  std::chrono::time_point<Clock> begin;
+struct Timestamp {
+    Timestamp() : t(std::chrono::steady_clock::now()) {}
+    const std::chrono::time_point<std::chrono::steady_clock> t;
 };
 
-inline void RuntimeError(const std::string& message)
-{
+int64_t elapsed_milliseconds(Timestamp timestamp);
+int64_t elapsed_nanoseconds(Timestamp timestamp);
+
+double get_base_cpu_frequency_ghz();
+
+inline void RuntimeError(const std::string& message) {
   std::cout << "runtime error: " << message << std::endl;
   exit(1);
 }
 
-inline std::string JoinPath(std::string path1, std::string path2)
-{
-  if (!path1.empty() && (path1.back() == '/' || path1.back() == '\\'))
-    path1 = path1.substr(0, path1.length() - 1);
+// x range: [-PI,PI]
+inline float fast_sine(float x) {
+    constexpr float PI = 3.14159265358f;
+    constexpr float B = 4.0f / PI;
+    constexpr float C = -4.0f / (PI * PI);
+    constexpr float P = 0.225f;
 
-  if (!path2.empty() && (path2[0] == '/' || path2[0] == '\\'))
-    path2 = path2.substr(1, path2.length() - 1);
-
-  return path1 + '/' + path2;
+    float y = B * x + C * x * (x < 0 ? -x : x);
+    return P * (y * (y < 0 ? -y : y) - y) + y;
 }
 
-inline size_t GetLastSlashPos(const std::string& path)
-{
-  size_t pos1 = path.rfind('/');
-  size_t pos2 = path.rfind('\\');
+// x range: [-PI, PI]
+inline float fast_cosine(float x) {
+    constexpr float PI = 3.14159265358f;
+    constexpr float B = 4.0f / PI;
+    constexpr float C = -4.0f / (PI * PI);
+    constexpr float P = 0.225f;
 
-  if (pos1 == std::string::npos && pos2 == std::string::npos)
-    return std::string::npos;
-  else if (pos1 == std::string::npos)
-    return pos2;
-  else if (pos2 == std::string::npos)
-    return pos1;
-  else
-    return std::max(pos1, pos2);
+    x = (x > 0) ? -x : x;
+    x += PI/2;
+
+    return fast_sine(x);
 }
 
-inline std::string GetFileName(const std::string& path)
-{
-  size_t slashPos = GetLastSlashPos(path);
-  return (slashPos == std::string::npos) ? path : path.substr(slashPos + 1);
+inline float fast_sqrt(float v) {
+    float out;
+    __m128 in = _mm_load_ss(&v);
+    _mm_store_ss(&out, _mm_mul_ss(in, _mm_rsqrt_ss(in)));
+    return out;
 }
 
-inline std::string GetDirectoryPath(const std::string& path)
-{
-  size_t slashPos = GetLastSlashPos(path);
-  return (slashPos == std::string::npos) ? path : path.substr(0, slashPos);
-}
+inline Vector uniform_sample_sphere() {
+    constexpr float PI = 3.14159265358f;
 
-inline std::string StripExtension(const std::string& path)
-{
-  size_t dotPos = path.rfind('.');
-  if (dotPos == std::string::npos)
-    return path;
+    auto u1 = random_float();
+    auto u2 = random_float();
 
-  size_t slashPos = GetLastSlashPos(path);
-  if (slashPos == std::string::npos)
-    return path.substr(0, dotPos);
-
-  return (dotPos < slashPos) ? path : path.substr(0, dotPos);
-}
-
-inline uint64_t CombineHashes(uint64_t hash1, uint64_t hash2)
-{
-  return hash1 ^ (hash2 + 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
+    float z = 1.0f - 2.0f * u1;
+    float r = fast_sqrt(1.0f - z*z);
+    float phi = PI * (-1.0f + 2.0f * u2);
+    float x = r * fast_cosine(phi);
+    float y = r * fast_sine(phi);
+    return Vector(x, y, z);
 }
