@@ -14,7 +14,7 @@ static uint64_t CombineHashes(uint64_t hash1, uint64_t hash2) {
     return hash1 ^ (hash2 + 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
 }
 
-std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
+std::unique_ptr<Indexed_Triangle_Mesh> LoadTriangleMesh(const std::string& fileName)
 {
   enum {
     headerSize = 80,
@@ -72,8 +72,8 @@ std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
     RuntimeError("incorrect size of binary stl file: " + fileName);
 
   // read mesh data
-  auto mesh = std::unique_ptr<TriangleMesh>(new TriangleMesh());
-  mesh->triangles.resize(numTriangles);
+  auto mesh = std::unique_ptr<Indexed_Triangle_Mesh>(new Indexed_Triangle_Mesh());
+  mesh->face_indices.resize(numTriangles);
 
   std::unordered_map<Vector, int32_t, VectorHash> uniqueVertices;
   uint8_t* dataPtr = fileContent.data() + headerSize + 4;
@@ -99,7 +99,7 @@ std::unique_ptr<TriangleMesh> LoadTriangleMesh(const std::string& fileName)
       else {
         vertexIndex = iterator->second;
       }
-      mesh->triangles[i].points[k].vertexIndex = vertexIndex;
+      mesh->face_indices[i][k] = vertexIndex;
     }
     dataPtr += facetSize;
   }

@@ -90,16 +90,11 @@ void ValidateKdTree(const KdTree& kdTree, int raysCount)
         KdTree::Intersection bruteForceIntersection;
         bool bruteForceHitFound = false;
 
-        for (int32_t i = 0; i < kdTree.GetMesh().GetTriangleCount(); i++) {
-            const auto& p = kdTree.GetMesh().triangles[i].points;
-
-            auto& vertices = kdTree.GetMesh().vertices;
-            auto p0 = vertices[p[0].vertexIndex];
-            auto p1 = vertices[p[1].vertexIndex];
-            auto p2 = vertices[p[2].vertexIndex];
+        for (int32_t i = 0; i < kdTree.GetMesh().get_triangle_count(); i++) {
+            Triangle triangle = kdTree.GetMesh().get_triangle(i);
 
             Triangle_Intersection intersection;
-            bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
+            bool hitFound = intersect_triangle(ray, triangle, intersection);
 
             if (hitFound && intersection.t < bruteForceIntersection.t) {
                 bruteForceIntersection.t = intersection.t;
@@ -132,16 +127,33 @@ void ValidateKdTree(const KdTree& kdTree, int raysCount)
     }
 }
 
+template <typename T> struct Triangle_Mesh_Selector;
+
+template <>
+struct Triangle_Mesh_Selector<Indexed_Triangle_Mesh> {
+    Triangle_Mesh_Selector(Indexed_Triangle_Mesh& indexed_mesh) : mesh(indexed_mesh) {}
+    Indexed_Triangle_Mesh& mesh;
+};
+
+template <>
+struct Triangle_Mesh_Selector<Simple_Triangle_Mesh> {
+    Triangle_Mesh_Selector(Indexed_Triangle_Mesh& indexed_mesh) : mesh(Simple_Triangle_Mesh::from_indexed_mesh(indexed_mesh)) {}
+    Simple_Triangle_Mesh mesh;
+};
+
 int main() {
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
-    std::unique_ptr<TriangleMesh> mesh = LoadTriangleMesh(model_path);
+    std::unique_ptr<Indexed_Triangle_Mesh> indexed_mesh = LoadTriangleMesh(model_path);
+
+    Triangle_Mesh_Selector<Triangle_Mesh> mesh_selector(*indexed_mesh);
+    Triangle_Mesh& mesh = mesh_selector.mesh;
 
     if (build_tree) {
         KdTree_Build_Params params;
         Timestamp t;
-        KdTree kdtree = build_kdtree(*mesh, params);
+        KdTree kdtree = build_kdtree(mesh, params);
         int time = int(elapsed_milliseconds(t));
         printf("KdTree build time = %dms\n", time);
 
@@ -149,19 +161,11 @@ int main() {
         printf("\n");
         return 0;
     }
+    auto kdtree = std::unique_ptr<KdTree>(new KdTree(kdtree_path, mesh));
 
-    auto kdtree = std::unique_ptr<KdTree>(new KdTree(kdtree_path, *mesh));
-
-    printf("[mesh]\n");
-    printf("vertex count = %d\n", mesh->GetVertexCount());
-    printf("triangle count = %d\n", mesh->GetTriangleCount());
-    printf("vertices size = %zdK\n", mesh->vertices.size() * sizeof(Vector) / 1024);
-    printf("triangles size = %zdK\n", mesh->triangles.size() * sizeof(TriangleMesh::Triangle) / 1024);
-    printf("\n");
-
+    mesh.print_info();
     kdtree->calculate_stats().Print();
     printf("\n");
-
     printf("=========================\n");
     printf("shooting rays (kdtree)...\n");
     random_init();

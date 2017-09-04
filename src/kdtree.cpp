@@ -6,18 +6,17 @@
 #include <fstream>
 #include <numeric>
 
-KdTree::KdTree(std::vector<KdNode>&& nodes,
-               std::vector<int32_t>&& triangleIndices, const TriangleMesh& mesh)
+KdTree::KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangleIndices, const Triangle_Mesh& mesh)
 : nodes(std::move(nodes))
 , triangleIndices(std::move(triangleIndices))
 , mesh(mesh)
-, meshBounds(mesh.GetBounds())
+, meshBounds(mesh.get_bounds())
 {
 }
 
-KdTree::KdTree(const std::string& fileName, const TriangleMesh& mesh)
+KdTree::KdTree(const std::string& fileName, const Triangle_Mesh& mesh)
 : mesh(mesh)
-, meshBounds(mesh.GetBounds())
+, meshBounds(mesh.get_bounds())
 {
   std::ifstream file(fileName, std::ios_base::in | std::ios_base::binary);
   if (!file)
@@ -188,14 +187,9 @@ bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
 void KdTree::IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const
 {
     if (leaf.GetTrianglesCount() == 1) {
-        const auto& p = mesh.triangles[leaf.GetIndex()].points;
-
-        auto& p0 = mesh.vertices[p[0].vertexIndex];
-        auto& p1 = mesh.vertices[p[1].vertexIndex];
-        auto& p2 = mesh.vertices[p[2].vertexIndex];
-
+        Triangle t = mesh.get_triangle(leaf.GetIndex());
         Triangle_Intersection intersection;
-        bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
+        bool hitFound = intersect_triangle(ray, t, intersection);
         if (hitFound && intersection.t < closestIntersection.t) {
             closestIntersection = intersection;
         }
@@ -203,23 +197,14 @@ void KdTree::IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Inters
     else {
         for (int32_t i = 0; i < leaf.GetTrianglesCount(); i++) {
             int32_t triangleIndex = triangleIndices[leaf.GetIndex() + i];
-            const auto& p = mesh.triangles[triangleIndex].points;
-
-            auto& p0 = mesh.vertices[p[0].vertexIndex];
-            auto& p1 = mesh.vertices[p[1].vertexIndex];
-            auto& p2 = mesh.vertices[p[2].vertexIndex];
-
+            Triangle triangle = mesh.get_triangle(triangleIndex);
             Triangle_Intersection intersection;
-            bool hitFound = intersect_triangle(ray, p0, p1, p2, intersection);
+            bool hitFound = intersect_triangle(ray, triangle, intersection);
             if (hitFound && intersection.t < closestIntersection.t) {
                 closestIntersection = intersection;
             }
         }
     }
-}
-
-const TriangleMesh& KdTree::GetMesh() const {
-    return mesh;
 }
 
 const Bounding_Box& KdTree::GetMeshBounds() const {

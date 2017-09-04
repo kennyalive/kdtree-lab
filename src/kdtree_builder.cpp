@@ -47,7 +47,7 @@ struct Split {
 
 class KdTree_Builder {
 public:
-    KdTree_Builder(const TriangleMesh& mesh, const KdTree_Build_Params& buildParams);
+    KdTree_Builder(const Triangle_Mesh& mesh, const KdTree_Build_Params& buildParams);
     KdTree build();
 
 private:
@@ -57,7 +57,7 @@ private:
     Split SelectSplitForAxis(const Bounding_Box& nodeBounds, int32_t nodeTrianglesCount, int axis) const;
 
 private:
-    const TriangleMesh& mesh;
+    const Triangle_Mesh& mesh;
     KdTree_Build_Params buildParams;
 
     std::vector<Bounding_Box> triangleBounds;
@@ -67,7 +67,7 @@ private:
     std::vector<int32_t> triangleIndices;
 };
 
-KdTree build_kdtree(const TriangleMesh& mesh, const KdTree_Build_Params& build_params) {
+KdTree build_kdtree(const Triangle_Mesh& mesh, const KdTree_Build_Params& build_params) {
     KdTree_Builder builder(mesh, build_params);
     return builder.build();
 }
@@ -78,31 +78,31 @@ enum {
   maxTrianglesCount = 0x3fffffff // max ~ 1 billion triangles
 };
 
-KdTree_Builder::KdTree_Builder(const TriangleMesh& mesh, const KdTree_Build_Params& buildParams)
+KdTree_Builder::KdTree_Builder(const Triangle_Mesh& mesh, const KdTree_Build_Params& buildParams)
 : mesh(mesh)
 , buildParams(buildParams)
 {
-  if (mesh.GetTriangleCount() > maxTrianglesCount) {
+  if (mesh.get_triangle_count() > maxTrianglesCount) {
     RuntimeError("exceeded the maximum number of mesh triangles: " +
                  std::to_string(maxTrianglesCount));
   }
 
   if (this->buildParams.maxDepth <= 0) {
-    this->buildParams.maxDepth = std::lround(8.0 + 1.3 * std::floor(std::log2(mesh.GetTriangleCount())));
+    this->buildParams.maxDepth = std::lround(8.0 + 1.3 * std::floor(std::log2(mesh.get_triangle_count())));
   }
   this->buildParams.maxDepth = std::min(this->buildParams.maxDepth, static_cast<int>(KdTree::maxTraversalDepth));
 }
 
 KdTree KdTree_Builder::build()
 {
-  const auto trianglesCount = mesh.GetTriangleCount();
+  const auto trianglesCount = mesh.get_triangle_count();
 
   // initialize bounding boxes
   triangleBounds.resize(trianglesCount);
   Bounding_Box meshBounds;
 
   for (auto i = 0; i < trianglesCount; i++) {
-    triangleBounds[i] = mesh.GetTriangleBounds(i);
+    triangleBounds[i] = mesh.get_triangle_bounds(i);
     meshBounds = Bounding_Box::get_union(meshBounds, triangleBounds[i]);
   }
 

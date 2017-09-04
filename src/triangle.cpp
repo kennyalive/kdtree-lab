@@ -1,13 +1,13 @@
-#include "triangle.h"
 #include "ray.h"
+#include "triangle.h"
 
 //
 // Möller-Trumbore triangle intersection algorithm.
 // http://www.graphics.cornell.edu/pubs/1997/MT97.pdf
 //
-bool intersect_triangle(const Ray& ray, const Vector& p0, const Vector& p1, const Vector& p2, Triangle_Intersection& intersection) {
-    Vector edge1 = p1 - p0;
-    Vector edge2 = p2 - p0;
+bool intersect_triangle(const Ray& ray, const Triangle& triangle, Triangle_Intersection& intersection) {
+    Vector edge1 = triangle[1] - triangle[0];
+    Vector edge2 = triangle[2] - triangle[0];
 
     Vector p = cross(ray.GetDirection(), edge2);
     float divisor = dot(edge1, p);
@@ -19,7 +19,7 @@ bool intersect_triangle(const Ray& ray, const Vector& p0, const Vector& p1, cons
     const float invDivisor = 1.0f / divisor;
 
     // compute barycentric coordinate b1
-    Vector t = ray.GetOrigin() - p0;
+    Vector t = ray.GetOrigin() - triangle[0];
     float b1 = invDivisor * dot(t, p);
     if (b1 < 0.0 || b1 > 1.0)
         return false;

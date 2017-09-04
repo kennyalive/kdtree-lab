@@ -99,34 +99,34 @@ struct KdNode {
 
 class KdTree {
 public:
-  struct Intersection {
-    float t = std::numeric_limits<float>::infinity();
-    float epsilon = 0.0;
-  };
+    struct Intersection {
+        float t = std::numeric_limits<float>::infinity();
+        float epsilon = 0.0;
+    };
 
 public:
-  KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangleIndices, const TriangleMesh& mesh);
-  KdTree(const std::string& fileName, const TriangleMesh& mesh);
-  void SaveToFile(const std::string& fileName) const;
+    KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangleIndices, const Triangle_Mesh& mesh);
+    KdTree(const std::string& fileName, const Triangle_Mesh& mesh);
 
-  bool Intersect(const Ray& ray, Intersection& intersection) const;
+    void SaveToFile(const std::string& fileName) const;
 
-  const TriangleMesh& GetMesh() const;
-  const Bounding_Box& GetMeshBounds() const;
+    bool Intersect(const Ray& ray, Intersection& intersection) const;
 
-  KdTree_Stats calculate_stats() const;
-
-private:
-  void IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const;
+    const Triangle_Mesh& GetMesh() const { return mesh; }
+    const Bounding_Box& GetMeshBounds() const;
+    KdTree_Stats calculate_stats() const;
 
 private:
-  friend class KdTree_Builder;
-
-  enum { maxTraversalDepth = 64 };
+    void IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const;
 
 private:
-  const std::vector<KdNode> nodes;
-  const std::vector<int32_t> triangleIndices;
-  const TriangleMesh& mesh;
-  const Bounding_Box meshBounds;
+    friend class KdTree_Builder;
+
+    enum { maxTraversalDepth = 64 };
+
+private:
+    const std::vector<KdNode> nodes;
+    const std::vector<int32_t> triangleIndices;
+    const Triangle_Mesh& mesh;
+    const Bounding_Box meshBounds;
 };

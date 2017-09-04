@@ -93,7 +93,7 @@ int main() {
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
-    std::unique_ptr<TriangleMesh> mesh = LoadTriangleMesh(model_path);
+    std::unique_ptr<Indexed_Triangle_Mesh> mesh = LoadTriangleMesh(model_path);
     
     RTCDevice device = rtcNewDevice(NULL);
 
@@ -101,10 +101,10 @@ int main() {
     struct Triangle { int32_t v0, v1, v2; };
 
     auto scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1);
-    unsigned geom_id = rtcNewTriangleMesh2(scene, RTC_GEOMETRY_STATIC, mesh->GetTriangleCount(), mesh->GetVertexCount(), 1);
+    unsigned geom_id = rtcNewTriangleMesh2(scene, RTC_GEOMETRY_STATIC, mesh->get_triangle_count(), mesh->get_vertex_count(), 1);
 
     auto vertices = static_cast<Vertex*>(rtcMapBuffer(scene, geom_id, RTC_VERTEX_BUFFER));
-    for (int32_t k = 0; k < mesh->GetVertexCount(); k++, vertices++) {
+    for (int32_t k = 0; k < mesh->get_vertex_count(); k++, vertices++) {
         vertices->x = mesh->vertices[k].x;
         vertices->y = mesh->vertices[k].y;
         vertices->z = mesh->vertices[k].z;
@@ -112,10 +112,10 @@ int main() {
     rtcUnmapBuffer(scene, geom_id, RTC_VERTEX_BUFFER);
 
     auto triangles = static_cast<Triangle*>(rtcMapBuffer(scene, geom_id, RTC_INDEX_BUFFER));
-    for (int k = 0; k < mesh->GetTriangleCount(); k++, triangles++) {
-        triangles->v0 = mesh->triangles[k].points[0].vertexIndex;
-        triangles->v1 = mesh->triangles[k].points[1].vertexIndex;
-        triangles->v2 = mesh->triangles[k].points[2].vertexIndex;
+    for (int k = 0; k < mesh->get_triangle_count(); k++, triangles++) {
+        triangles->v0 = mesh->face_indices[k][0];
+        triangles->v1 = mesh->face_indices[k][1];
+        triangles->v2 = mesh->face_indices[k][2];
     }
     rtcUnmapBuffer(scene, geom_id, RTC_INDEX_BUFFER);
     rtcCommit(scene);
@@ -123,7 +123,7 @@ int main() {
     printf("shooting rays (embree)...\n");
     random_init();
 
-    int timeMsec = benchmark_embree(scene, mesh->GetBounds());
+    int timeMsec = benchmark_embree(scene, mesh->get_bounds());
     double speed = (benchmark_ray_count / 1000000.0) / (timeMsec / 1000.0);
     printf("raycast performance [%-6s]: %.2f MRays/sec, (rnd = %d)\n", model_path.c_str(), speed, random_uint32());
 

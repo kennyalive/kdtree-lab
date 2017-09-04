@@ -15,4 +15,4 @@ struct KdTree_Build_Params {
     int leafTrianglesLimit = 2;
 };
 
-KdTree build_kdtree(const TriangleMesh& mesh, const KdTree_Build_Params& build_params);
+KdTree build_kdtree(const Triangle_Mesh& mesh, const KdTree_Build_Params& build_params);
