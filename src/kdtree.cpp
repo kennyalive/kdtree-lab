@@ -7,17 +7,17 @@
 #include <map>
 #include <numeric>
 
-KdTree::KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangleIndices, const Triangle_Mesh& mesh)
+KdTree::KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangle_indices, const Triangle_Mesh& mesh)
 : nodes(std::move(nodes))
-, triangleIndices(std::move(triangleIndices))
+, triangle_indices(std::move(triangle_indices))
 , mesh(mesh)
-, meshBounds(mesh.get_bounds())
+, mesh_bounds(mesh.get_bounds())
 {
 }
 
 KdTree::KdTree(const std::string& fileName, const Triangle_Mesh& mesh)
 : mesh(mesh)
-, meshBounds(mesh.get_bounds())
+, mesh_bounds(mesh.get_bounds())
 {
   std::ifstream file(fileName, std::ios_base::in | std::ios_base::binary);
   if (!file)
@@ -43,7 +43,7 @@ KdTree::KdTree(const std::string& fileName, const Triangle_Mesh& mesh)
   if (!file)
     RuntimeError("failed to read triangle indices count: " + fileName);
 
-  auto& mutableIndices = const_cast<std::vector<int32_t>&>(triangleIndices);
+  auto& mutableIndices = const_cast<std::vector<int32_t>&>(triangle_indices);
   mutableIndices.resize(indicesCount);
 
   auto indicesBytesCount = indicesCount * 4;
@@ -52,7 +52,7 @@ KdTree::KdTree(const std::string& fileName, const Triangle_Mesh& mesh)
     RuntimeError("failed to read kdTree triangle indices: " + fileName);
 }
 
-void KdTree::SaveToFile(const std::string& fileName) const
+void KdTree::save_to_file(const std::string& fileName) const
 {
   std::ofstream file(fileName, std::ios_base::out | std::ios_base::binary);
   if (!file)
@@ -68,11 +68,11 @@ void KdTree::SaveToFile(const std::string& fileName) const
     RuntimeError("failed to write kdTree nodes: " + fileName);
 
   // write triangle indices
-  int32_t indicesCount = static_cast<int32_t>(triangleIndices.size());
+  int32_t indicesCount = static_cast<int32_t>(triangle_indices.size());
   file.write(reinterpret_cast<const char*>(&indicesCount), 4);
 
   auto indicesBytesCount = indicesCount * 4;
-  file.write(reinterpret_cast<const char*>(triangleIndices.data()),
+  file.write(reinterpret_cast<const char*>(triangle_indices.data()),
              indicesBytesCount);
   if (!file)
     RuntimeError("failed to write kdTree triangle indices: " + fileName);
@@ -80,20 +80,20 @@ void KdTree::SaveToFile(const std::string& fileName) const
 
 bool KdTree::intersect(const Ray& ray, Intersection& intersection) const
 {
-    auto boundsIntersection = meshBounds.intersect(ray);
-    if (!boundsIntersection.found)
+    auto bounds_intersection = mesh_bounds.intersect(ray);
+    if (!bounds_intersection.found)
         return false;
 
-    struct TraversalInfo {
+    struct Traversal_Info {
         const KdNode* node;
         float tMin;
         float tMax;
     };
-    TraversalInfo traversalStack[maxTraversalDepth];
-    int traversalStackSize = 0;
+    Traversal_Info traversal_stack[max_traversal_depth];
+    int traversal_stack_size = 0;
 
-    float t_min = boundsIntersection.t0;
-    float t_max = boundsIntersection.t1;
+    float t_min = bounds_intersection.t0;
+    float t_max = bounds_intersection.t1;
 
     Triangle_Intersection closest_intersection;
     auto node = &nodes[0];
@@ -127,8 +127,8 @@ bool KdTree::intersect(const Ray& ray, Intersection& intersection) const
                 else if (t_split <= t_min)
                     node = secondChild;
                 else { // t_min < t_split < t_max
-                    assert(traversalStackSize < maxTraversalDepth);
-                    traversalStack[traversalStackSize++] = {secondChild, t_split, t_max};
+                    assert(traversal_stack_size < max_traversal_depth);
+                    traversal_stack[traversal_stack_size++] = {secondChild, t_split, t_max};
                     node = firstChild;
                     t_max = t_split;
                 }
@@ -138,8 +138,8 @@ bool KdTree::intersect(const Ray& ray, Intersection& intersection) const
                     if (t_min > 0.0)
                         node = aboveChild;
                     else { // t_min == 0.0
-                        assert(traversalStackSize < maxTraversalDepth);
-                        traversalStack[traversalStackSize++] = {aboveChild, 0.0, t_max};
+                        assert(traversal_stack_size < max_traversal_depth);
+                        traversal_stack[traversal_stack_size++] = {aboveChild, 0.0, t_max};
                         // check single point [0.0, 0.0]
                         node = belowChild;
                         t_max = 0.0;
@@ -149,8 +149,8 @@ bool KdTree::intersect(const Ray& ray, Intersection& intersection) const
                     if (t_min > 0.0)
                         node = belowChild;
                     else { // t_min == 0.0
-                        assert(traversalStackSize < maxTraversalDepth);
-                        traversalStack[traversalStackSize++] = {belowChild, 0.0, t_max};
+                        assert(traversal_stack_size < max_traversal_depth);
+                        traversal_stack[traversal_stack_size++] = {belowChild, 0.0, t_max};
                         // check single point [0.0, 0.0]
                         node = aboveChild;
                         t_max = 0.0;
@@ -158,27 +158,27 @@ bool KdTree::intersect(const Ray& ray, Intersection& intersection) const
                 }
                 else { // ray.direction[axis] == 0.0
                     // for both nodes check [t_min, t_max] range
-                    assert(traversalStackSize < maxTraversalDepth);
-                    traversalStack[traversalStackSize++] = {aboveChild, t_min, t_max};
+                    assert(traversal_stack_size < max_traversal_depth);
+                    traversal_stack[traversal_stack_size++] = {aboveChild, t_min, t_max};
                     node = belowChild;
                 }
             }
         }
         else { // leaf node
-            IntersectLeafTriangles(ray, *node, closest_intersection);
+            intersect_leaf_triangles(ray, *node, closest_intersection);
 
-            if (traversalStackSize == 0)
+            if (traversal_stack_size == 0)
                 break;
 
-            // Almost correct implementation is just: --traversalStackSize.
+            // Almost correct implementation is just: --traversal_stack_size.
             // We need to scan the entire stack to handle the case when distance_to_split_plane == 0.0 && ray.direction[axis] == 0.0.
             do {
-                --traversalStackSize;
-            } while (traversalStackSize > 0 && traversalStack[traversalStackSize].tMin >= closest_intersection.t);
+                --traversal_stack_size;
+            } while (traversal_stack_size > 0 && traversal_stack[traversal_stack_size].tMin >= closest_intersection.t);
 
-            node = traversalStack[traversalStackSize].node;
-            t_min = traversalStack[traversalStackSize].tMin;
-            t_max = traversalStack[traversalStackSize].tMax;
+            node = traversal_stack[traversal_stack_size].node;
+            t_min = traversal_stack[traversal_stack_size].tMin;
+            t_max = traversal_stack[traversal_stack_size].tMax;
         }
     } // while (t_min < closest_intersection.t)
 
@@ -190,7 +190,7 @@ bool KdTree::intersect(const Ray& ray, Intersection& intersection) const
     return true;
 }
 
-void KdTree::IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const
+void KdTree::intersect_leaf_triangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const
 {
     if (leaf.GetTrianglesCount() == 1) {
         Triangle t = mesh.get_triangle(leaf.GetIndex());
@@ -202,7 +202,7 @@ void KdTree::IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Inters
     }
     else {
         for (int32_t i = 0; i < leaf.GetTrianglesCount(); i++) {
-            int32_t triangleIndex = triangleIndices[leaf.GetIndex() + i];
+            int32_t triangleIndex = triangle_indices[leaf.GetIndex() + i];
             Triangle triangle = mesh.get_triangle(triangleIndex);
             Triangle_Intersection intersection;
             bool hitFound = intersect_triangle(ray, triangle, intersection);
@@ -213,15 +213,11 @@ void KdTree::IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Inters
     }
 }
 
-const Bounding_Box& KdTree::GetMeshBounds() const {
-    return meshBounds;
-}
-
 KdTree_Stats KdTree::calculate_stats() const {
     KdTree_Stats stats;
 
     stats.nodes_size = nodes.size() * sizeof(KdNode);
-    stats.triangle_indices_size = triangleIndices.size() * sizeof(triangleIndices[0]);
+    stats.triangle_indices_size = triangle_indices.size() * sizeof(triangle_indices[0]);
     stats.node_count = static_cast<int32_t>(nodes.size());
 
     int64_t triangle_per_leaf_accumulated = 0;

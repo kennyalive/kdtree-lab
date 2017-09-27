@@ -90,7 +90,7 @@ KdTree_Builder::KdTree_Builder(const Triangle_Mesh& mesh, const KdTree_Build_Par
   if (this->buildParams.maxDepth <= 0) {
     this->buildParams.maxDepth = std::lround(8.0 + 1.3 * std::floor(std::log2(mesh.get_triangle_count())));
   }
-  this->buildParams.maxDepth = std::min(this->buildParams.maxDepth, static_cast<int>(KdTree::maxTraversalDepth));
+  this->buildParams.maxDepth = std::min(this->buildParams.maxDepth, static_cast<int>(KdTree::max_traversal_depth));
 }
 
 KdTree KdTree_Builder::build()

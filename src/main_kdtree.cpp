@@ -18,7 +18,7 @@ const int validation_ray_count = 32768;
 
 //const std::string model_path = "data/teapot.stl";
 //const std::string kdtree_path = "data/teapot.kdtree";
-//const int validation_ray_count = 32768;
+//const int validation_ray_count = 1'000'000;
 
 //const std::string model_path = "data/bunny.stl";
 //const std::string kdtree_path = "data/bunny.kdtree";
@@ -26,16 +26,18 @@ const int validation_ray_count = 32768;
 
 //const std::string model_path = "data/dragon.stl";
 //const std::string kdtree_path = "data/dragon.kdtree";
-//const int validation_ray_count = 32;
+//const int validation_ray_count = 1'000;
 
 const bool build_tree = false;
 
 int benchmark_kd_tree(const KdTree& kdtree) {
     Timestamp tx;
 
-    Vector last_hit = (kdtree.GetMeshBounds().min_point + kdtree.GetMeshBounds().max_point) * 0.5f;
+    auto bounds = kdtree.get_mesh().get_bounds();
+
+    Vector last_hit = (bounds.min_point + bounds.max_point) * 0.5f;
     float last_hit_epsilon = 0.0;
-    auto ray_generator = Ray_Generator(kdtree.GetMeshBounds());
+    auto ray_generator = Ray_Generator(bounds);
 
     int64_t time_ns = 0;
 
@@ -74,10 +76,11 @@ int benchmark_kd_tree(const KdTree& kdtree) {
 
 void validate_kdtree(const KdTree& kdtree, int ray_count) {
     printf("Running kdtree validation... ");
-    Vector last_hit = (kdtree.GetMeshBounds().min_point + kdtree.GetMeshBounds().max_point) * 0.5;
+    auto bounds = kdtree.get_mesh().get_bounds();
+    Vector last_hit = (bounds.min_point + bounds.max_point) * 0.5;
     float last_hit_epsilon = 0.0f;
 
-    auto ray_generator = Ray_Generator(kdtree.GetMeshBounds());
+    auto ray_generator = Ray_Generator(bounds);
 
     for (int i = 0; i < ray_count; i++) {
         const Ray ray = ray_generator.generate_ray(last_hit, last_hit_epsilon);
@@ -90,8 +93,8 @@ void validate_kdtree(const KdTree& kdtree, int ray_count) {
 
         int hit_k = -1;
 
-        for (int32_t k = 0; k < kdtree.GetMesh().get_triangle_count(); k++) {
-            Triangle triangle = kdtree.GetMesh().get_triangle(k);
+        for (int32_t k = 0; k < kdtree.get_mesh().get_triangle_count(); k++) {
+            Triangle triangle = kdtree.get_mesh().get_triangle(k);
 
             Triangle_Intersection intersection;
             bool hit = intersect_triangle(ray, triangle, intersection);
@@ -163,7 +166,7 @@ int main() {
         int time = int(elapsed_milliseconds(t));
         printf("KdTree build time = %dms\n", time);
 
-        kdtree.SaveToFile("test.kdtree");
+        kdtree.save_to_file("test.kdtree");
         printf("\n");
         return 0;
     }

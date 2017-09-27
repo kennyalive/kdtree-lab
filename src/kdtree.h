@@ -105,30 +105,28 @@ public:
     };
 
 public:
-    KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangleIndices, const Triangle_Mesh& mesh);
+    KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangle_indices, const Triangle_Mesh& mesh);
     KdTree(const std::string& fileName, const Triangle_Mesh& mesh);
 
-    void SaveToFile(const std::string& fileName) const;
+    void save_to_file(const std::string& fileName) const;
 
     bool intersect(const Ray& ray, Intersection& intersection) const;
 
-    const Triangle_Mesh& GetMesh() const { return mesh; }
-    const Bounding_Box& GetMeshBounds() const;
+    const Triangle_Mesh& get_mesh() const { return mesh; }
     KdTree_Stats calculate_stats() const;
-
     std::vector<int32_t> calculate_path_to_node(int32_t node_index) const;
 
 private:
-    void IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const;
+    void intersect_leaf_triangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const;
 
 private:
     friend class KdTree_Builder;
 
-    enum { maxTraversalDepth = 64 };
+    enum { max_traversal_depth = 64 };
 
 private:
     const std::vector<KdNode> nodes;
-    const std::vector<int32_t> triangleIndices;
+    const std::vector<int32_t> triangle_indices;
     const Triangle_Mesh& mesh;
-    const Bounding_Box meshBounds;
+    const Bounding_Box mesh_bounds;
 };
