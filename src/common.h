@@ -13,8 +13,9 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
-enum { benchmark_ray_count = 10000000 };
+enum { benchmark_ray_count = 1'000'000 };
 enum { debug_rays = false };
 enum { debug_ray_count = 4 };
 
@@ -76,4 +77,15 @@ inline Vector uniform_sample_sphere() {
     float x = r * fast_cosine(phi);
     float y = r * fast_sine(phi);
     return Vector(x, y, z);
+}
+
+template <typename T>
+void print_vector(const std::vector<T>& v) {
+    printf("[%lld]: (", v.size());
+    for (std::size_t i = 0; i < v.size(); i++) {
+        printf("%d", v[i]);
+        if (i != v.size() - 1)
+            printf(", ");
+    }
+    printf(")\n");
 }

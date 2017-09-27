@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <fstream>
+#include <map>
 #include <numeric>
 
 KdTree::KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangleIndices, const Triangle_Mesh& mesh)
@@ -77,7 +78,7 @@ void KdTree::SaveToFile(const std::string& fileName) const
     RuntimeError("failed to write kdTree triangle indices: " + fileName);
 }
 
-bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
+bool KdTree::intersect(const Ray& ray, Intersection& intersection) const
 {
     auto boundsIntersection = meshBounds.intersect(ray);
     if (!boundsIntersection.found)
@@ -156,7 +157,7 @@ bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
                     }
                 }
                 else { // ray.direction[axis] == 0.0
-                  // for both nodes check [t_min, t_max] range
+                    // for both nodes check [t_min, t_max] range
                     assert(traversalStackSize < maxTraversalDepth);
                     traversalStack[traversalStackSize++] = {aboveChild, t_min, t_max};
                     node = belowChild;
@@ -169,7 +170,12 @@ bool KdTree::Intersect(const Ray& ray, Intersection& intersection) const
             if (traversalStackSize == 0)
                 break;
 
-            --traversalStackSize;
+            // Almost correct implementation is just: --traversalStackSize.
+            // We need to scan the entire stack to handle the case when distance_to_split_plane == 0.0 && ray.direction[axis] == 0.0.
+            do {
+                --traversalStackSize;
+            } while (traversalStackSize > 0 && traversalStack[traversalStackSize].tMin >= closest_intersection.t);
+
             node = traversalStack[traversalStackSize].node;
             t_min = traversalStack[traversalStackSize].tMin;
             t_max = traversalStack[traversalStackSize].tMax;
@@ -288,6 +294,31 @@ KdTree_Stats KdTree::calculate_stats() const {
     stats.empty_leaf_stats.depth_standard_deviation = float(std::sqrt(accum / stats.empty_leaf_count));
 
     return stats;
+}
+
+std::vector<int32_t> KdTree::calculate_path_to_node(int32_t node_index) const {
+    assert(node_index >= 0 && node_index < nodes.size());
+
+    std::map<int32_t, int32_t> parent_map;
+
+    for (int32_t i = 0; i < int32_t(nodes.size()); i++) {
+        auto node = nodes[i];
+        if (node.IsInteriorNode()) {
+            int32_t below_child = i + 1;
+            int32_t above_child = node.get_above_child();
+            parent_map[below_child] = i;
+            parent_map[above_child] = i;
+        }
+    }
+
+    std::vector<int32_t> path { node_index };
+    auto it = parent_map.find(node_index);
+    while (it != parent_map.cend()) {
+        path.push_back(it->second);
+        it = parent_map.find(it->second);
+    }
+    std::reverse(path.begin(), path.end());
+    return path;
 }
 
 void KdTree_Stats::Print() {

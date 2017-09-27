@@ -45,7 +45,7 @@ int benchmark_kd_tree(const KdTree& kdtree) {
         Timestamp t2;
 
         KdTree::Intersection intersection;
-        bool hitFound = kdtree.Intersect(ray, intersection);
+        bool hitFound = kdtree.intersect(ray, intersection);
 
         time_ns += elapsed_nanoseconds(t2);
 
@@ -72,38 +72,38 @@ int benchmark_kd_tree(const KdTree& kdtree) {
     return (int)(time_ns / 1'000'000);
 }
 
+void validate_kdtree(const KdTree& kdtree, int ray_count) {
+    printf("Running kdtree validation... ");
+    Vector last_hit = (kdtree.GetMeshBounds().min_point + kdtree.GetMeshBounds().max_point) * 0.5;
+    float last_hit_epsilon = 0.0f;
 
+    auto ray_generator = Ray_Generator(kdtree.GetMeshBounds());
 
-void ValidateKdTree(const KdTree& kdTree, int raysCount)
-{
-    Vector lastHit =
-        (kdTree.GetMeshBounds().min_point + kdTree.GetMeshBounds().max_point) * 0.5;
-    float lastHitEpsilon = 0.0;
-    auto rayGenerator = Ray_Generator(kdTree.GetMeshBounds());
+    for (int i = 0; i < ray_count; i++) {
+        const Ray ray = ray_generator.generate_ray(last_hit, last_hit_epsilon);
 
-    for (int raysTested = 0; raysTested < raysCount; raysTested++) {
-        const Ray ray = rayGenerator.generate_ray(lastHit, lastHitEpsilon);
+        KdTree::Intersection kdtree_intersection;
+        bool kdtree_hit = kdtree.intersect(ray, kdtree_intersection);
 
-        KdTree::Intersection kdTreeIntersection;
-        bool kdTreeHitFound = kdTree.Intersect(ray, kdTreeIntersection);
+        KdTree::Intersection brute_force_intersection;
+        bool brute_force_hit = false;
 
-        KdTree::Intersection bruteForceIntersection;
-        bool bruteForceHitFound = false;
+        int hit_k = -1;
 
-        for (int32_t i = 0; i < kdTree.GetMesh().get_triangle_count(); i++) {
-            Triangle triangle = kdTree.GetMesh().get_triangle(i);
+        for (int32_t k = 0; k < kdtree.GetMesh().get_triangle_count(); k++) {
+            Triangle triangle = kdtree.GetMesh().get_triangle(k);
 
             Triangle_Intersection intersection;
-            bool hitFound = intersect_triangle(ray, triangle, intersection);
+            bool hit = intersect_triangle(ray, triangle, intersection);
 
-            if (hitFound && intersection.t < bruteForceIntersection.t) {
-                bruteForceIntersection.t = intersection.t;
-                bruteForceHitFound = true;
+            if (hit && intersection.t < brute_force_intersection.t) {
+                brute_force_intersection.t = intersection.t;
+                brute_force_hit = true;
+                hit_k = k;
             }
         }
 
-        if (kdTreeHitFound != bruteForceHitFound ||
-            kdTreeIntersection.t != bruteForceIntersection.t) {
+        if (kdtree_hit != brute_force_hit || kdtree_intersection.t != brute_force_intersection.t) {
             const auto& o = ray.GetOrigin();
             const auto& d = ray.GetDirection();
             printf("KdTree accelerator test failure:\n"
@@ -113,18 +113,20 @@ void ValidateKdTree(const KdTree& kdTree, int raysCount)
                 "actual T %.16g [%a]\n"
                 "ray origin: (%a, %a, %a)\n"
                 "ray direction: (%a, %a, %a)\n",
-                kdTreeHitFound ? "true" : "false",
-                bruteForceHitFound ? "true" : "false", kdTreeIntersection.t,
-                kdTreeIntersection.t, bruteForceIntersection.t,
-                bruteForceIntersection.t, o.x, o.y, o.z, d.x, d.y, d.z);
+                kdtree_hit ? "true" : "false",
+                brute_force_hit ? "true" : "false", kdtree_intersection.t,
+                kdtree_intersection.t, brute_force_intersection.t,
+                brute_force_intersection.t, o.x, o.y, o.z, d.x, d.y, d.z);
             RuntimeError("KdTree traversal error detected");
         }
 
-        if (bruteForceHitFound) {
-            lastHit = ray.GetPoint(bruteForceIntersection.t);
-            lastHitEpsilon = bruteForceIntersection.epsilon;
+        if (kdtree_hit) {
+            last_hit = ray.GetPoint(kdtree_intersection.t);
+            last_hit_epsilon = kdtree_intersection.epsilon;
         }
     }
+
+    printf("DONE\n");
 }
 
 template <typename T> struct Triangle_Mesh_Selector;
@@ -141,9 +143,13 @@ struct Triangle_Mesh_Selector<Simple_Triangle_Mesh> {
     Simple_Triangle_Mesh mesh;
 };
 
+const bool build_tree = false;
+
 int main() {
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
+    random_init();
 
     std::unique_ptr<Indexed_Triangle_Mesh> indexed_mesh = LoadTriangleMesh(model_path);
 
@@ -168,11 +174,10 @@ int main() {
     printf("\n");
     printf("=========================\n");
     printf("shooting rays (kdtree)...\n");
-    random_init();
 
     int timeMsec = benchmark_kd_tree(*kdtree);
     double speed = (benchmark_ray_count / 1000000.0) / (timeMsec / 1000.0);
     printf("raycast performance [%-6s]: %.2f MRays/sec, (rnd = %d)\n", model_path.c_str(), speed, random_uint32());
 
-    //ValidateKdTree(*kdtree, validation_ray_count);
+    //validate_kdtree(*kdtree, validation_ray_count);
 }

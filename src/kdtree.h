@@ -110,11 +110,13 @@ public:
 
     void SaveToFile(const std::string& fileName) const;
 
-    bool Intersect(const Ray& ray, Intersection& intersection) const;
+    bool intersect(const Ray& ray, Intersection& intersection) const;
 
     const Triangle_Mesh& GetMesh() const { return mesh; }
     const Bounding_Box& GetMeshBounds() const;
     KdTree_Stats calculate_stats() const;
+
+    std::vector<int32_t> calculate_path_to_node(int32_t node_index) const;
 
 private:
     void IntersectLeafTriangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const;
