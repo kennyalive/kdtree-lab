@@ -87,10 +87,10 @@ KdTree_Builder::KdTree_Builder(const Triangle_Mesh& mesh, const KdTree_Build_Par
                  std::to_string(maxTrianglesCount));
   }
 
-  if (this->buildParams.maxDepth <= 0) {
-    this->buildParams.maxDepth = std::lround(8.0 + 1.3 * std::floor(std::log2(mesh.get_triangle_count())));
+  if (this->buildParams.max_depth <= 0) {
+    this->buildParams.max_depth = std::lround(8.0 + 1.3 * std::floor(std::log2(mesh.get_triangle_count())));
   }
-  this->buildParams.maxDepth = std::min(this->buildParams.maxDepth, static_cast<int>(KdTree::max_traversal_depth));
+  this->buildParams.max_depth = std::min(this->buildParams.max_depth, static_cast<int>(KdTree::max_traversal_depth));
 }
 
 KdTree KdTree_Builder::build()
@@ -108,7 +108,7 @@ KdTree KdTree_Builder::build()
 
   // initialize working memory
   edgesBuffer.resize(2 * trianglesCount);
-  trianglesBuffer.resize(trianglesCount * (buildParams.maxDepth + 1));
+  trianglesBuffer.resize(trianglesCount * (buildParams.max_depth + 1));
 
   // fill triangle indices for root node
   for (auto i = 0; i < trianglesCount; i++)
@@ -116,7 +116,7 @@ KdTree KdTree_Builder::build()
 
   // recursively build all nodes
   BuildNode(meshBounds, trianglesBuffer.data(), trianglesCount,
-            buildParams.maxDepth, trianglesBuffer.data(),
+            buildParams.max_depth, trianglesBuffer.data(),
             trianglesBuffer.data() + trianglesCount);
 
   return KdTree(std::move(nodes), std::move(triangleIndices), mesh);
@@ -132,7 +132,7 @@ void KdTree_Builder::BuildNode(const Bounding_Box& nodeBounds,
                  std::to_string(KdNode::maxNodesCount));
 
   // check if leaf node should be created
-  if (nodeTrianglesCount <= buildParams.leafTrianglesLimit || depth == 0) {
+  if (nodeTrianglesCount <= buildParams.leaf_triangles_limit || depth == 0) {
     CreateLeaf(nodeTriangles, nodeTrianglesCount);
     return;
   }
@@ -197,7 +197,7 @@ Split KdTree_Builder::SelectSplit(const Bounding_Box& nodeBounds,
 {
   // Determine axes iteration order.
   int axes[3];
-  if (buildParams.splitAlongTheLongestAxis) {
+  if (buildParams.split_along_the_longest_axis) {
     Vector diag = nodeBounds.max_point - nodeBounds.min_point;
     if (diag.x >= diag.y && diag.x >= diag.z) {
       axes[0] = 0;
@@ -240,7 +240,7 @@ Split KdTree_Builder::SelectSplit(const Bounding_Box& nodeBounds,
     // select split position
     auto split = SelectSplitForAxis(nodeBounds, nodeTrianglesCount, axis);
     if (split.edge != -1) {
-      if (buildParams.splitAlongTheLongestAxis)
+      if (buildParams.split_along_the_longest_axis)
         return split;
       if (split.cost < bestSplit.cost)
         bestSplit = split;
@@ -285,7 +285,7 @@ Split KdTree_Builder::SelectSplitForAxis(
   const int32_t numEdges = 2 * nodeTrianglesCount;
 
   Split bestSplit = {-1, axis,
-                     buildParams.intersectionCost * nodeTrianglesCount};
+                     buildParams.intersection_cost * nodeTrianglesCount};
 
   int32_t numBelow = 0;
   int32_t numAbove = nodeTrianglesCount;
@@ -316,11 +316,11 @@ Split KdTree_Builder::SelectSplitForAxis(
       auto pBelow = belowS * invTotalS;
       auto pAbove = aboveS * invTotalS;
 
-      auto emptyBonus =
-          (numBelow == 0 || numAbove == 0) ? buildParams.emptyBonus : 0.0f;
+      auto empty_bonus =
+          (numBelow == 0 || numAbove == 0) ? buildParams.empty_bonus : 0.0f;
 
-      auto cost = buildParams.traversalCost +
-                  (1.0f - emptyBonus) * buildParams.intersectionCost *
+      auto cost = buildParams.traversal_cost +
+                  (1.0f - empty_bonus) * buildParams.intersection_cost *
                       (pBelow * numBelow + pAbove * numAbove);
 
       if (cost < bestSplit.cost) {
