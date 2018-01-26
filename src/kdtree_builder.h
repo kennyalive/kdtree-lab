@@ -1,7 +1,6 @@
 #pragma once
 
 #include "kdtree.h"
-#include <cstdint>
 
 struct KdTree_Build_Params {
     float intersection_cost = 80;
