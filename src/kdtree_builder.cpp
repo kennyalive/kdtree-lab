@@ -129,8 +129,8 @@ KdTree KdTree_Builder::build()
 
 void KdTree_Builder::build_node(const Bounding_Box& node_bounds, int32_t triangles_offset, int32_t triangle_count, int depth, int32_t above_triangles_offset)
 {
-    if (nodes.size() >= KdNode::maxNodesCount)
-        RuntimeError("maximum number of KdTree nodes has been reached: " + std::to_string(KdNode::maxNodesCount));
+    if (nodes.size() >= KdNode::max_node_count)
+        RuntimeError("maximum number of KdTree nodes has been reached: " + std::to_string(KdNode::max_node_count));
 
     // check if leaf node should be created
     if (triangle_count <= build_params.leaf_triangles_limit || depth == 0) {
@@ -185,7 +185,7 @@ void KdTree_Builder::build_node(const Bounding_Box& node_bounds, int32_t triangl
     build_node(bounds0, 0, n0, depth - 1, above_triangles_offset + n1);
 
     auto above_child = static_cast<int32_t>(nodes.size());
-    nodes[this_node_index].InitInteriorNode(split.axis, above_child, split_position);
+    nodes[this_node_index].init_interior_node(split.axis, above_child, split_position);
 
     Bounding_Box bounds1 = node_bounds;
     bounds1.min_point[split.axis] = split_position;
@@ -196,13 +196,13 @@ void KdTree_Builder::create_leaf(const Triangle_Info* triangles, int32_t triangl
 {
     KdNode node;
     if (triangle_count == 0) {
-        node.InitEmptyLeaf();
+        node.init_empty_leaf();
     }
     else if (triangle_count == 1) {
-        node.InitLeafWithSingleTriangle(triangles[0].triangle);
+        node.init_leaf_with_single_triangle(triangles[0].triangle);
     }
     else {
-        node.InitLeafWithMultipleTriangles(triangle_count, static_cast<int32_t>(triangle_indices.size()));
+        node.init_leaf_with_multiple_triangles(triangle_count, static_cast<int32_t>(triangle_indices.size()));
         for (int32_t i = 0; i < triangle_count; i++) {
             triangle_indices.push_back(triangles[i].triangle);
         }

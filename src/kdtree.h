@@ -27,72 +27,72 @@ struct KdTree_Stats {
     Leaf_Stats not_empty_leaf_stats;
     Leaf_Stats empty_leaf_stats; // empty_leaf_stats.average_triangle_count == 0
 
-    void Print();
+    void print();
 };
 
 struct KdNode {
     uint32_t word0;
     uint32_t word1;
 
-    enum : int32_t { maxNodesCount = 0x40000000 }; // max ~ 1 billion nodes
-    enum : uint32_t { leafNodeFlags = 3 };
+    enum : int32_t { max_node_count = 0x40000000 }; // max ~ 1 billion nodes
+    enum : uint32_t { leaf_node_flags = 3 };
 
-    void InitInteriorNode(int axis, int32_t aboveChild, float split) {
+    void init_interior_node(int axis, int32_t above_child, float split) {
         // 0 - x axis, 1 - y axis, 2 - z axis
         assert(axis >= 0 && axis < 3);
-        assert(aboveChild < maxNodesCount);
+        assert(above_child < max_node_count);
 
-        word0 = axis | (static_cast<uint32_t>(aboveChild) << 2);
+        word0 = axis | (static_cast<uint32_t>(above_child) << 2);
         word1 = *reinterpret_cast<uint32_t*>(&split);
     }
 
-    void InitEmptyLeaf() {
-        word0 = leafNodeFlags; // word0 == 3
+    void init_empty_leaf() {
+        word0 = leaf_node_flags; // word0 == 3
         word1 = 0;             // not used for empty leaf, just set default value
     }
 
-    void InitLeafWithSingleTriangle(int32_t triangleIndex) {
-        word0 = leafNodeFlags | (1 << 2); // word0 == 7
-        word1 = static_cast<uint32_t>(triangleIndex);
+    void init_leaf_with_single_triangle(int32_t triangle_index) {
+        word0 = leaf_node_flags | (1 << 2); // word0 == 7
+        word1 = static_cast<uint32_t>(triangle_index);
     }
 
-    void InitLeafWithMultipleTriangles(int32_t numTriangles, int32_t triangleIndicesOffset) {
-        assert(numTriangles > 1);
+    void init_leaf_with_multiple_triangles(int32_t triangle_count, int32_t triangle_indices_offset) {
+        assert(triangle_count > 1);
         // word0 == 11, 15, 19, ... (for numTriangles = 2, 3, 4, ...)
-        word0 = leafNodeFlags | (static_cast<uint32_t>(numTriangles) << 2);
-        word1 = static_cast<uint32_t>(triangleIndicesOffset);
+        word0 = leaf_node_flags | (static_cast<uint32_t>(triangle_count) << 2);
+        word1 = static_cast<uint32_t>(triangle_indices_offset);
     }
 
-    bool IsLeaf() const {
-        return (word0 & leafNodeFlags) == leafNodeFlags;
+    bool is_leaf() const {
+        return (word0 & leaf_node_flags) == leaf_node_flags;
     }
 
-    bool IsInteriorNode() const {
-        return !IsLeaf();
+    bool is_interior_node() const {
+        return !is_leaf();
     }
 
-    int32_t GetTrianglesCount() const {
-        assert(IsLeaf());
+    int32_t get_triangle_count() const {
+        assert(is_leaf());
         return static_cast<int32_t>(word0 >> 2);
     }
 
-    int32_t GetIndex() const {
-        assert(IsLeaf());
+    int32_t get_index() const {
+        assert(is_leaf());
         return static_cast<int32_t>(word1);
     }
 
     int get_split_axis() const {
-        assert(IsInteriorNode());
-        return static_cast<int>(word0 & leafNodeFlags);
+        assert(is_interior_node());
+        return static_cast<int>(word0 & leaf_node_flags);
     }
 
     float get_split_position() const {
-        assert(IsInteriorNode());
+        assert(is_interior_node());
         return *reinterpret_cast<const float*>(&word1);
     }
 
     int32_t get_above_child() const {
-        assert(IsInteriorNode());
+        assert(is_interior_node());
         return static_cast<int32_t>(word0 >> 2);
     }
 };
@@ -106,9 +106,9 @@ public:
 
 public:
     KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangle_indices, const Triangle_Mesh& mesh);
-    KdTree(const std::string& fileName, const Triangle_Mesh& mesh);
+    KdTree(const std::string& file_name, const Triangle_Mesh& mesh);
 
-    void save_to_file(const std::string& fileName) const;
+    void save_to_file(const std::string& file_name) const;
 
     bool intersect(const Ray& ray, Intersection& intersection) const;
 
@@ -117,7 +117,7 @@ public:
     std::vector<int32_t> calculate_path_to_node(int32_t node_index) const;
 
 private:
-    void intersect_leaf_triangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closestIntersection) const;
+    void intersect_leaf_triangles(const Ray& ray, KdNode leaf, Triangle_Intersection& closest_intersection) const;
 
 private:
     friend class KdTree_Builder;
