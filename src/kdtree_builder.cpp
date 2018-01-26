@@ -87,7 +87,7 @@ KdTree_Builder::KdTree_Builder(const Triangle_Mesh& mesh, const KdTree_Build_Par
 , build_params(build_params)
 {
     if (mesh.get_triangle_count() > max_triangle_count) {
-        RuntimeError("exceeded the maximum number of mesh triangles: " + std::to_string(max_triangle_count));
+        error("exceeded the maximum number of mesh triangles: " + std::to_string(max_triangle_count));
     }
 
     if (this->build_params.max_depth <= 0) {
@@ -130,7 +130,7 @@ KdTree KdTree_Builder::build()
 void KdTree_Builder::build_node(const Bounding_Box& node_bounds, int32_t triangles_offset, int32_t triangle_count, int depth, int32_t above_triangles_offset)
 {
     if (nodes.size() >= KdNode::max_node_count)
-        RuntimeError("maximum number of KdTree nodes has been reached: " + std::to_string(KdNode::max_node_count));
+        error("maximum number of KdTree nodes has been reached: " + std::to_string(KdNode::max_node_count));
 
     // check if leaf node should be created
     if (triangle_count <= build_params.leaf_triangles_limit || depth == 0) {

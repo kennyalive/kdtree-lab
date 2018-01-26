@@ -15,19 +15,19 @@ KdTree::KdTree(std::vector<KdNode>&& nodes, std::vector<int32_t>&& triangle_indi
 {
 }
 
-KdTree::KdTree(const std::string& fileName, const Triangle_Mesh& mesh)
+KdTree::KdTree(const std::string& file_name, const Triangle_Mesh& mesh)
 : mesh(mesh)
 , mesh_bounds(mesh.get_bounds())
 {
-    std::ifstream file(fileName, std::ios_base::in | std::ios_base::binary);
+    std::ifstream file(file_name, std::ios_base::in | std::ios_base::binary);
     if (!file)
-        RuntimeError("failed to open kdTree file: " + fileName);
+        error("failed to open kdTree file: " + file_name);
 
     // read nodes
     int32_t nodesCount;
     file.read(reinterpret_cast<char*>(&nodesCount), 4);
     if (!file)
-        RuntimeError("failed to read nodes count: " + fileName);
+        error("failed to read nodes count: " + file_name);
 
     auto& mutableNodes = const_cast<std::vector<KdNode>&>(nodes);
     mutableNodes.resize(nodesCount);
@@ -35,13 +35,13 @@ KdTree::KdTree(const std::string& fileName, const Triangle_Mesh& mesh)
     auto nodesBytesCount = nodesCount * sizeof(KdNode);
     file.read(reinterpret_cast<char*>(mutableNodes.data()), nodesBytesCount);
     if (!file)
-        RuntimeError("failed to read kdTree nodes: " + fileName);
+        error("failed to read kdTree nodes: " + file_name);
 
     // read triangle indices
     int32_t indicesCount;
     file.read(reinterpret_cast<char*>(&indicesCount), 4);
     if (!file)
-        RuntimeError("failed to read triangle indices count: " + fileName);
+        error("failed to read triangle indices count: " + file_name);
 
     auto& mutableIndices = const_cast<std::vector<int32_t>&>(triangle_indices);
     mutableIndices.resize(indicesCount);
@@ -49,14 +49,14 @@ KdTree::KdTree(const std::string& fileName, const Triangle_Mesh& mesh)
     auto indicesBytesCount = indicesCount * 4;
     file.read(reinterpret_cast<char*>(mutableIndices.data()), indicesBytesCount);
     if (!file)
-        RuntimeError("failed to read kdTree triangle indices: " + fileName);
+        error("failed to read kdTree triangle indices: " + file_name);
 }
 
-void KdTree::save_to_file(const std::string& fileName) const
+void KdTree::save_to_file(const std::string& file_name) const
 {
-    std::ofstream file(fileName, std::ios_base::out | std::ios_base::binary);
+    std::ofstream file(file_name, std::ios_base::out | std::ios_base::binary);
     if (!file)
-        RuntimeError("failed to open kdTree file for writing: " + fileName);
+        error("failed to open kdTree file for writing: " + file_name);
 
     // write nodes
     int32_t nodesCount = static_cast<int32_t>(nodes.size());
@@ -65,7 +65,7 @@ void KdTree::save_to_file(const std::string& fileName) const
     auto nodesBytesCount = nodesCount * sizeof(KdNode);
     file.write(reinterpret_cast<const char*>(nodes.data()), nodesBytesCount);
     if (!file)
-        RuntimeError("failed to write kdTree nodes: " + fileName);
+        error("failed to write kdTree nodes: " + file_name);
 
     // write triangle indices
     int32_t indicesCount = static_cast<int32_t>(triangle_indices.size());
@@ -75,7 +75,7 @@ void KdTree::save_to_file(const std::string& fileName) const
     file.write(reinterpret_cast<const char*>(triangle_indices.data()),
         indicesBytesCount);
     if (!file)
-        RuntimeError("failed to write kdTree triangle indices: " + fileName);
+        error("failed to write kdTree triangle indices: " + file_name);
 }
 
 bool KdTree::intersect(const Ray& ray, Intersection& intersection) const

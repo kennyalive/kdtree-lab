@@ -35,7 +35,7 @@ std::unique_ptr<Indexed_Triangle_Mesh> LoadTriangleMesh(const std::string& fileN
 
   std::ifstream file(fileName, std::ios_base::in | std::ios_base::binary);
   if (!file)
-    RuntimeError("failed to open file: " + fileName);
+    error("failed to open file: " + fileName);
 
   // get file size
   file.seekg(0, std::ios_base::end);
@@ -43,33 +43,33 @@ std::unique_ptr<Indexed_Triangle_Mesh> LoadTriangleMesh(const std::string& fileN
   file.seekg(0, std::ios_base::beg);
 
   if (fileSize == std::streampos(-1) || !file)
-    RuntimeError("failed to read file stats: " + fileName);
+    error("failed to read file stats: " + fileName);
 
   // read file content
   std::vector<uint8_t> fileContent(static_cast<size_t>(fileSize));
   file.read(reinterpret_cast<char*>(fileContent.data()), fileSize);
   if (!file)
-    RuntimeError("failed to read file content: " + fileName);
+    error("failed to read file content: " + fileName);
 
   // validate file content
   std::array<uint8_t, 5> asciiStlHeader = {0x73, 0x6f, 0x6c, 0x69, 0x64};
   if (memcmp(fileContent.data(), asciiStlHeader.data(), 5) == 0)
-    RuntimeError("ascii stl files are not supported: " + fileName);
+    error("ascii stl files are not supported: " + fileName);
 
   if (fileSize < headerSize + 4)
-    RuntimeError("invalid binary stl file: " + fileName);
+    error("invalid binary stl file: " + fileName);
 
   uint32_t numTriangles =
       *reinterpret_cast<uint32_t*>(fileContent.data() + headerSize);
 
   if (numTriangles > maxTrianglesCount)
-    RuntimeError("too large model: too many triangles: " + fileName);
+    error("too large model: too many triangles: " + fileName);
 
   auto expectedSize =
       headerSize + 4 + static_cast<size_t>(numTriangles) * facetSize;
 
   if (fileContent.size() != expectedSize)
-    RuntimeError("incorrect size of binary stl file: " + fileName);
+    error("incorrect size of binary stl file: " + fileName);
 
   // read mesh data
   auto mesh = std::unique_ptr<Indexed_Triangle_Mesh>(new Indexed_Triangle_Mesh());
@@ -90,7 +90,7 @@ std::unique_ptr<Indexed_Triangle_Mesh> LoadTriangleMesh(const std::string& fileN
       auto iterator = uniqueVertices.find(v);
       if (iterator == uniqueVertices.cend()) {
         if (mesh->vertices.size() > maxVerticesCount) {
-          RuntimeError("too large model: too many vertices");
+          error("too large model: too many vertices");
         }
         vertexIndex = static_cast<int32_t>(mesh->vertices.size());
         uniqueVertices[v] = vertexIndex;

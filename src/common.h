@@ -10,7 +10,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -29,9 +28,9 @@ int64_t elapsed_nanoseconds(Timestamp timestamp);
 
 double get_base_cpu_frequency_ghz();
 
-inline void RuntimeError(const std::string& message) {
-  std::cout << "runtime error: " << message << std::endl;
-  exit(1);
+inline void error(const std::string& message) {
+    printf("error: %s\n", message.c_str());
+    exit(1);
 }
 
 // x range: [-PI,PI]
