@@ -9,6 +9,7 @@ struct KdTree_Build_Params {
     int max_depth = -1;
     bool split_along_the_longest_axis = false;
     int leaf_triangles_limit = 2; // the actual amout of leaf triangles can be larger
+    bool split_clipping = true;
 };
 
 KdTree build_kdtree(const Triangle_Mesh& mesh, const KdTree_Build_Params& build_params);

@@ -127,6 +127,78 @@ KdTree KdTree_Builder::build()
     return KdTree(std::move(nodes), std::move(triangle_indices), mesh);
 }
 
+//
+// Splits the provided bounding box and selects either left or right part based on the provided boolean flag.
+// The selected part is additionally clipped to be as tight as possible taking into account triangle geometry.
+// Implements clipping algorithm described in this article:
+//      Alexei Soupikov, Maxim Shevtsov, Alexander Kapustin, 2008. Improving Kd-tree Quality at a Reasonable Construction Cost
+//
+void clip_bounds(const Triangle& tri, float split_position, int axis, bool left, Bounding_Box& bounds)
+{
+    assert(split_position > bounds.min_point[axis] && split_position < bounds.max_point[axis]);
+
+    if (left)
+        bounds.max_point[axis] = split_position;
+    else
+        bounds.min_point[axis] = split_position;
+
+    // sort triangle vertices along the split dimension
+    Vector p[3] = { tri[0], tri[1], tri[2] };
+
+    if (p[1][axis] < p[0][axis])
+        std::swap(p[1], p[0]);
+
+    if (p[2][axis] < p[0][axis])
+        std::swap(p[2], p[0]);
+
+    if (p[2][axis] < p[1][axis])
+        std::swap(p[2], p[1]);
+
+    // re-index sorted points:
+    // A is a common vertex of 2 edges intersected by a splitting plane,
+    // B is a middle vertex,
+    // C is the remaining third vertex
+    bool middle_on_the_left = p[1][axis] < split_position;
+
+    Vector a, c;
+    Vector b = p[1];
+    if (middle_on_the_left) {
+        a = p[2];
+        c = p[0];
+    } else {
+        a = p[0];
+        c = p[2];
+    }
+
+    // find insersection points of two edges with a splitting plane
+    Vector isect_ab;
+    if (b[axis] == split_position) {
+        isect_ab = b;
+    } else {
+        Vector ab = b - a;
+        isect_ab = a + ab * ((split_position - a[axis]) / ab[axis]);
+    }
+
+    Vector ac = c - a;
+    Vector isect_ac = a + ac * ((split_position - a[axis]) / ac[axis]);
+
+    // construct bounding box
+    Bounding_Box bounds2;
+    bounds2.extend(isect_ab);
+    bounds2.extend(isect_ac);
+
+    if (left) {
+        bounds2.extend(p[0]);
+        if (middle_on_the_left)
+            bounds2.extend(p[1]);
+    } else {
+        bounds2.extend(p[2]);
+        if (!middle_on_the_left)
+            bounds2.extend(p[1]);
+    }
+    bounds = Bounding_Box::get_intersection(bounds, bounds2);
+}
+
 void KdTree_Builder::build_node(const Bounding_Box& node_bounds, int32_t triangles_offset, int32_t triangle_count, int depth, int32_t above_triangles_offset)
 {
     if (nodes.size() >= KdNode::max_node_count)
@@ -158,7 +230,12 @@ void KdTree_Builder::build_node(const Bounding_Box& node_bounds, int32_t triangl
             int32_t index = edges[split.axis][i].get_triangle_index();
             Triangle_Info triangle_info = triangle_buffer2[index];
 
-            // TODO: clip bounds here
+            if (build_params.split_clipping) {
+                if (triangle_info.bounds.max_point[split.axis] > split_position) {
+                    const Triangle& triangle = mesh.get_triangle(triangle_info.triangle);
+                    clip_bounds(triangle, split_position, split.axis, true, triangle_info.bounds);
+                }
+            }
 
             triangle_buffer[n0++] = triangle_info;
         }
@@ -170,7 +247,12 @@ void KdTree_Builder::build_node(const Bounding_Box& node_bounds, int32_t triangl
             int32_t index = edges[split.axis][i].get_triangle_index();
             Triangle_Info triangle_info = triangle_buffer2[index];
 
-            // TODO: clip bounds here
+            if (build_params.split_clipping) {
+                if (triangle_info.bounds.min_point[split.axis] < split_position) {
+                    const Triangle& triangle = mesh.get_triangle(triangle_info.triangle);
+                    clip_bounds(triangle, split_position, split.axis, false, triangle_info.bounds);
+                }
+            }
 
             triangle_buffer[above_triangles_offset + n1++] = triangle_info;
         }

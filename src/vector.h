@@ -27,10 +27,17 @@ struct Vector {
   {}
 
   Vector& operator+=(const Vector& v) {
-    x += v.x;
-    y += v.y;
-    z += v.z;
-    return *this;
+      x += v.x;
+      y += v.y;
+      z += v.z;
+      return *this;
+  }
+
+  Vector& operator-=(const Vector& v) {
+      x -= v.x;
+      y -= v.y;
+      z -= v.z;
+      return *this;
   }
 
   Vector operator+(const Vector& v) const {
